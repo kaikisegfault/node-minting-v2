@@ -468,7 +468,7 @@ export const handler = async (event) => {
                     let tokenPrice;
                     if (network === 'Ethereum') {
                         tokenPrice = prices.ethPrice;
-                    } else if (network === 'Binance Smart Chain') {
+                    } else if (network === 'Binance Smart Chain' || network === 'Binance') {
                         tokenPrice = prices.bnbPrice;
                     } else {
                         tokenPrice = prices.flrPrice;
@@ -486,7 +486,7 @@ export const handler = async (event) => {
                         const actualOtherSupply = flareCurrentSupply.add(ethers.BigNumber.from(1200)).add(supplies.bscSupply);
                         const difference = actualOtherSupply.sub(ethOtherChainSupply);
                         otherChainQty = difference.gt(0) ? difference : ethers.BigNumber.from(0);
-                    } else if (network === 'Binance Smart Chain') {
+                    } else if (network === 'Binance Smart Chain' || network === 'Binance') {
                         const bscOtherChainSupply = supplies.bscOtherChainSupply;
                         const flareCurrentSupply = supplies.flareSupply.sub(supplies.whitelistMinted);
                         const actualOtherSupply = supplies.ethSupply.add(flareCurrentSupply).add(ethers.BigNumber.from(1200));

@@ -26,8 +26,7 @@ const createSwitchNetwork = (versionId) => {
         if (selectedNetwork === 'Flare') {
           await addFlareNetwork();
         }
-        if (selectedNetwork === 'Binance Smart Chain') {
-          // Auto-add BSC network to MetaMask if needed
+        if (selectedNetwork === 'Binance') {
           try {
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
@@ -68,7 +67,7 @@ const createSwitchNetwork = (versionId) => {
     };
 
     const getTitle = () => {
-      return network === 'Ethereum' || network === 'Flare' || network === 'Binance Smart Chain'
+      return network === 'Ethereum' || network === 'Flare' || network === 'Binance'
         ? "Switch Network" : "Choose Network to MINT";
     };
 
@@ -76,7 +75,7 @@ const createSwitchNetwork = (versionId) => {
       <div id={versionId}>
         <Selector
           title={getTitle()}
-          options={['Ethereum', 'Flare', 'Binance Smart Chain']}
+          options={['Ethereum', 'Flare', 'Binance']}
           onChange={handleNetworkChange}
           selectedOption={network}
           disabledOptions={['none']}

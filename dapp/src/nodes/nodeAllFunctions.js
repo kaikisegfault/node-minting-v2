@@ -39,7 +39,7 @@ export const useNodeFunctions = () => {
 
   const callByNetwork = useCallback((network, fn, ethFn, flareFn, bscFn) => {
     if (network === 'ethereum' || network === 'Ethereum') return ethFn();
-    if (network === 'bsc' || network === 'Binance Smart Chain') return bscFn();
+    if (network === 'bsc' || network === 'Binance') return bscFn();
     return flareFn(); // Flare is default
   }, []);
 

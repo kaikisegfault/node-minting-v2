@@ -56,12 +56,11 @@ const CONFIGS = {
         chainId: '0xaa36a7',
       },
       flare: {
-        websocket: 'wss://flare-rpc.publicnode.com',
+        websocket: 'wss://flare-api.flare.network/ext/bc/C/ws',
         rpc: 'https://flare-api.flare.network/ext/bc/C/rpc',
         chainId: '0xe',
       },
       bsc: {
-        websocket: 'wss://bsc-testnet-rpc.publicnode.com',
         rpc: 'https://bsc-testnet.bnbchain.org',
         chainId: '0x61',
       },
@@ -105,7 +104,7 @@ export const CONFIG = CONFIGS[ENV];
 export const ENVIRONMENT = ENV;
 
 export const getNodeContractAddress = (network) => {
-  if (ENV === 'staging' && network === 'Binance Smart Chain') {
+  if (ENV === 'staging' && network === 'Binance') {
     return CONFIG.contracts.nodeBsc;
   }
   return CONFIG.contracts.node;
@@ -115,7 +114,7 @@ export const getChainConfig = (network) => {
   switch (network) {
     case 'Ethereum': return CONFIG.providers.ethereum;
     case 'Flare': return CONFIG.providers.flare;
-    case 'Binance Smart Chain': return CONFIG.providers.bsc;
+    case 'Binance': return CONFIG.providers.bsc;
     default: return CONFIG.providers.ethereum;
   }
 };

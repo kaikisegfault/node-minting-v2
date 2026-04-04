@@ -9,7 +9,7 @@ const NodePriceInfo = () => {
   const prices = useNodePrices();
   const [flash, setFlash] = useState(false);
 
-  const isEthereumOrFlare = network === 'Ethereum' || network === 'Flare';
+  const isEthereumOrFlare = network === 'Ethereum' || network === 'Flare' || network === 'Binance';
   const showBothPrices = !connected || !isEthereumOrFlare;
 
   // Handle flashing effect on price updates

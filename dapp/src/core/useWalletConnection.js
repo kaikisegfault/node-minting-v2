@@ -229,7 +229,7 @@ const chainIdToName = (chainId) => {
     case '0x1':    
       return 'Ethereum';
     case '0x38':
-      return 'Binance Smart Chain';
+      return 'Binance';
     case '0xa86a':
       return 'Avalanche';
     case '0x13':
@@ -255,7 +255,7 @@ const networkToChainId = (network) => {
       return '0x1';
     case 'Flare':
       return '0xe';
-    case 'Binance Smart Chain':
+    case 'Binance':
       return '0x38';
     case 'Sepolia Testnet':
       return '0xaa36a7';
