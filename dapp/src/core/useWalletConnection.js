@@ -255,8 +255,12 @@ const networkToChainId = (network) => {
       return '0x1';
     case 'Flare':
       return '0xe';
+    case 'Binance Smart Chain':
+      return '0x38';
     case 'Sepolia Testnet':
       return '0xaa36a7';
+    case 'Hardhat Local':
+      return '0x7a69';
     default:
       throw new Error('Unknown network');
   }

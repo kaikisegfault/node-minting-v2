@@ -1,0 +1,51 @@
+name: Deploy Staging to S3
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install DApp dependencies
+        working-directory: dapp
+        run: npm ci
+
+      - name: Build React DApp
+        working-directory: dapp
+        run: GENERATE_SOURCEMAP=false npm run build
+
+      - name: Integrate build into site
+        run: |
+          rm -rf site/build
+          cp -r dapp/build site/build
+          rm -rf site/static/media
+          mkdir -p site/static
+          cp -r dapp/build/static/media site/static/media 2>/dev/null || true
+
+          CSS_HASH=$(python3 -c "import json; d=json.load(open('dapp/build/asset-manifest.json')); print(d['files']['main.css'].split('/')[-1])")
+          JS_HASH=$(python3 -c "import json; d=json.load(open('dapp/build/asset-manifest.json')); print(d['files']['main.js'].split('/')[-1])")
+
+          sed -i -E "s|build/static/css/main\.[a-f0-9]+\.css|build/static/css/$CSS_HASH|g" site/index.html
+          sed -i -E "s|build/static/js/main\.[a-f0-9]+\.js|build/static/js/$JS_HASH|g" site/index.html
+
+          echo "CSS: $CSS_HASH"
+          echo "JS:  $JS_HASH"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Deploy site/ to S3
+        run: aws s3 sync site/ s3://staging-mint-page/ --delete

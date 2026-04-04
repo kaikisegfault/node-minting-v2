@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { ethers } from 'ethers';
 import useWalletConnection from '../../../core/useWalletConnection';
 import NODE_ABI from '../../../abis/NODE_ABI.json';
+import { getNodeContractAddress } from '../../../config/environment';
 import { isLocalMode, getLocalContractAddress } from '../../../core/HardhatInteraction';
 
 // Helper to detect if an error is a user rejection (handles various wallet types)
@@ -86,14 +87,8 @@ const useNodeRegWeb3Injection = () => {
     let contractAddress;
     if (isLocalMode()) {
       contractAddress = getLocalContractAddress(network);
-    } else if (network.toLowerCase() === 'ethereum') {
-      contractAddress = process.env.REACT_APP_NODE_CONTRACT_ADDRESS;
-    } else if (network.toLowerCase() === 'flare') {
-      contractAddress = process.env.REACT_APP_NODE_CONTRACT_ADDRESS;
-    } else if (network.toLowerCase() === 'binance smart chain') {
-      contractAddress = process.env.REACT_APP_NODE_CONTRACT_ADDRESS;
     } else {
-      throw new Error('Unsupported network');
+      contractAddress = getNodeContractAddress(network);
     }
 
     if (!contractAddress) {

@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Selector from '../ui-components/Selector';
 import useWalletConnection from '../core/useWalletConnection';
 import PopupNotification from '../ui-components/PopupNotification';
-import { isLocalMode, simulatedChainEmitter } from '../core/HardhatInteraction';
 
 const createSwitchNetwork = (versionId) => {
   return () => {
     const { network, switchNetwork, checkNetworkSwitchPending, addFlareNetwork } = useWalletConnection();
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
-    const [localChain, setLocalChain] = useState('Ethereum');
 
     useEffect(() => {
       if (!checkNetworkSwitchPending()) {
@@ -17,18 +15,8 @@ const createSwitchNetwork = (versionId) => {
       }
     }, [checkNetworkSwitchPending]);
 
-    // In local Hardhat mode, just update the simulated chain — no MetaMask switch
-    const isHardhatLocal = network === 'Hardhat Local' && isLocalMode();
-
     const handleNetworkChange = async (selectedNetwork) => {
       console.log(`Network selected for ${versionId}:`, selectedNetwork);
-
-      if (isHardhatLocal) {
-        setLocalChain(selectedNetwork);
-        simulatedChainEmitter.emit(selectedNetwork);
-        return;
-      }
-
       if (checkNetworkSwitchPending()) {
         setNotificationMessage("check the wallet and complete the pending request");
         setShowNotification(true);
@@ -37,6 +25,31 @@ const createSwitchNetwork = (versionId) => {
       try {
         if (selectedNetwork === 'Flare') {
           await addFlareNetwork();
+        }
+        if (selectedNetwork === 'Binance Smart Chain') {
+          // Auto-add BSC network to MetaMask if needed
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x38' }],
+            });
+          } catch (switchError) {
+            if (switchError.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x38',
+                  chainName: 'BNB Smart Chain',
+                  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                  rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                  blockExplorerUrls: ['https://bscscan.com/']
+                }],
+              });
+            } else {
+              throw switchError;
+            }
+          }
+          return;
         }
         await switchNetwork(selectedNetwork);
       } catch (error) {
@@ -55,28 +68,21 @@ const createSwitchNetwork = (versionId) => {
     };
 
     const getTitle = () => {
-      if (isHardhatLocal) return "Simulate Chain";
       return network === 'Ethereum' || network === 'Flare' || network === 'Binance Smart Chain'
         ? "Switch Network" : "Choose Network to MINT";
     };
-
-    const options = isHardhatLocal
-      ? ['Ethereum', 'Flare', 'Binance Smart Chain']
-      : ['Ethereum', 'Flare', 'Binance Smart Chain'];
-
-    const selectedOption = isHardhatLocal ? localChain : network;
 
     return (
       <div id={versionId}>
         <Selector
           title={getTitle()}
-          options={options}
+          options={['Ethereum', 'Flare', 'Binance Smart Chain']}
           onChange={handleNetworkChange}
-          selectedOption={selectedOption}
+          selectedOption={network}
           disabledOptions={['none']}
           defaultSelected="none"
           name={versionId}
-          disabled={!isHardhatLocal && checkNetworkSwitchPending()}
+          disabled={checkNetworkSwitchPending()}
         />
         {showNotification && (
           <PopupNotification

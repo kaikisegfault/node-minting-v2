@@ -1,8 +1,7 @@
 import { useCallback, useRef } from 'react';
+import { CONFIG } from '../../../config/environment';
 
-const API_URL = process.env.REACT_APP_LOCAL_MODE === 'true'
-    ? 'http://localhost:3001'
-    : 'https://are21gn8z7.execute-api.us-east-1.amazonaws.com/v1';
+const API_URL = CONFIG.nodeAPI;
 
 // useNodeApiCommunicator.js
 const useNodeApiCommunicator = () => {

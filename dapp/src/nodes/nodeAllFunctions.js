@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { NodeEthereumInteraction, NodeFlareInteraction } from '../core/contractInteractions';
+import { NodeEthereumInteraction, NodeFlareInteraction, NodeBSCInteraction } from '../core/contractInteractions';
 import { isLocalMode, NodeHardhatEth, NodeHardhatFlare, NodeHardhatBsc } from '../core/HardhatInteraction';
 
 export const useNodeFunctions = () => {
@@ -25,12 +25,32 @@ export const useNodeFunctions = () => {
     }
   }, []);
 
+  const callNodeBSCFunction = useCallback(async (functionName, ...args) => {
+    try {
+      // eslint-disable-next-line
+      const contract = isLocalMode() ? NodeHardhatBsc : NodeBSCInteraction;
+      const result = await contract[functionName](...args);
+      return result;
+    } catch (err) {
+      console.error(`Error calling Node BSC ${functionName}:`, err);
+      return null;
+    }
+  }, []);
+
+  const callByNetwork = useCallback((network, fn, ethFn, flareFn, bscFn) => {
+    if (network === 'ethereum' || network === 'Ethereum') return ethFn();
+    if (network === 'bsc' || network === 'Binance Smart Chain') return bscFn();
+    return flareFn(); // Flare is default
+  }, []);
+
   // VIEW FUNCTIONS
 
   const getNativeBalance = useCallback(async (network, address) => {
     try {
       if (network === 'ethereum') {
         return NodeEthereumInteraction.provider.getBalance(address);
+      } else if (network === 'bsc') {
+        return NodeBSCInteraction.provider.getBalance(address);
       } else {
         return NodeFlareInteraction.provider.getBalance(address);
       }
@@ -41,142 +61,142 @@ export const useNodeFunctions = () => {
   }, []);
 
   const getPaused = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('paused');
-    } else {
-      return callNodeFlareFunction('paused');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
-  
+    return callByNetwork(network, 'paused',
+      () => callNodeEthereumFunction('paused'),
+      () => callNodeFlareFunction('paused'),
+      () => callNodeBSCFunction('paused')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
+
   const getWhitelistPaused = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('whitelistPaused');
-    } else {
-      return callNodeFlareFunction('whitelistPaused');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'whitelistPaused',
+      () => callNodeEthereumFunction('whitelistPaused'),
+      () => callNodeFlareFunction('whitelistPaused'),
+      () => callNodeBSCFunction('whitelistPaused')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getWhitelistStatus = useCallback(async (network, address) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('getWhitelistStatus', address);
-    } else {
-      return callNodeFlareFunction('getWhitelistStatus', address);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'getWhitelistStatus',
+      () => callNodeEthereumFunction('getWhitelistStatus', address),
+      () => callNodeFlareFunction('getWhitelistStatus', address),
+      () => callNodeBSCFunction('getWhitelistStatus', address)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getA1CurrentChainTnftSupply = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a1CurrentChainTnftSupply');
-    } else {
-      return callNodeFlareFunction('a1CurrentChainTnftSupply');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a1CurrentChainTnftSupply',
+      () => callNodeEthereumFunction('a1CurrentChainTnftSupply'),
+      () => callNodeFlareFunction('a1CurrentChainTnftSupply'),
+      () => callNodeBSCFunction('a1CurrentChainTnftSupply')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getA2OtherChainsTnftSupply = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a2OtherChainsTnftSupply');
-    } else {
-      return callNodeFlareFunction('a2OtherChainsTnftSupply');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a2OtherChainsTnftSupply',
+      () => callNodeEthereumFunction('a2OtherChainsTnftSupply'),
+      () => callNodeFlareFunction('a2OtherChainsTnftSupply'),
+      () => callNodeBSCFunction('a2OtherChainsTnftSupply')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getA3GetTotalCurrentSupply = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a3GetTotalCurrentSupply');
-    } else {
-      return callNodeFlareFunction('a3GetTotalCurrentSupply');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a3GetTotalCurrentSupply',
+      () => callNodeEthereumFunction('a3GetTotalCurrentSupply'),
+      () => callNodeFlareFunction('a3GetTotalCurrentSupply'),
+      () => callNodeBSCFunction('a3GetTotalCurrentSupply')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getWhitelistMintedCount = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('whitelistMintedCount');
-    } else {
-      return callNodeFlareFunction('whitelistMintedCount');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'whitelistMintedCount',
+      () => callNodeEthereumFunction('whitelistMintedCount'),
+      () => callNodeFlareFunction('whitelistMintedCount'),
+      () => callNodeBSCFunction('whitelistMintedCount')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getA5RemainingNodesToMINT = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a5RemainingNodesToMINT');
-    } else {
-      return callNodeFlareFunction('a5RemainingNodesToMINT');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a5RemainingNodesToMINT',
+      () => callNodeEthereumFunction('a5RemainingNodesToMINT'),
+      () => callNodeFlareFunction('a5RemainingNodesToMINT'),
+      () => callNodeBSCFunction('a5RemainingNodesToMINT')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getBatchPriceInUSD = useCallback(async (network, startId, endId) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('getBatchPriceInUSD', startId, endId);
-    } else {
-      return callNodeFlareFunction('getBatchPriceInUSD', startId, endId);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'getBatchPriceInUSD',
+      () => callNodeEthereumFunction('getBatchPriceInUSD', startId, endId),
+      () => callNodeFlareFunction('getBatchPriceInUSD', startId, endId),
+      () => callNodeBSCFunction('getBatchPriceInUSD', startId, endId)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const getCurrentPriceInUSD = useCallback(async (network, nodeId) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('getCurrentPriceInUSD', nodeId);
-    } else {
-      return callNodeFlareFunction('getCurrentPriceInUSD', nodeId);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
-  
+    return callByNetwork(network, 'getCurrentPriceInUSD',
+      () => callNodeEthereumFunction('getCurrentPriceInUSD', nodeId),
+      () => callNodeFlareFunction('getCurrentPriceInUSD', nodeId),
+      () => callNodeBSCFunction('getCurrentPriceInUSD', nodeId)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
+
  // USER VIEW FUNTIONS
   const getA6AddressEscrowHoldings = useCallback(async (network, address) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a6AddressEscrowHoldings', address);
-    } else {
-      return callNodeFlareFunction('a6AddressEscrowHoldings', address);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a6AddressEscrowHoldings',
+      () => callNodeEthereumFunction('a6AddressEscrowHoldings', address),
+      () => callNodeFlareFunction('a6AddressEscrowHoldings', address),
+      () => callNodeBSCFunction('a6AddressEscrowHoldings', address)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   // WRITE FUNCTIONS
   const setA2SetUpBackUpAddresses = useCallback(async (network, backup1Address, backup2Address) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a2SetUpBackUpAddresses', backup1Address, backup2Address);
-    } else {
-      return callNodeFlareFunction('a2SetUpBackUpAddresses', backup1Address, backup2Address);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a2SetUpBackUpAddresses',
+      () => callNodeEthereumFunction('a2SetUpBackUpAddresses', backup1Address, backup2Address),
+      () => callNodeFlareFunction('a2SetUpBackUpAddresses', backup1Address, backup2Address),
+      () => callNodeBSCFunction('a2SetUpBackUpAddresses', backup1Address, backup2Address)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const setA3PullMyNodesFromEscrow = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a3PullMyNodesFromEscrow');
-    } else {
-      return callNodeFlareFunction('a3PullMyNodesFromEscrow');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a3PullMyNodesFromEscrow',
+      () => callNodeEthereumFunction('a3PullMyNodesFromEscrow'),
+      () => callNodeFlareFunction('a3PullMyNodesFromEscrow'),
+      () => callNodeBSCFunction('a3PullMyNodesFromEscrow')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const setA4ReceiveTnftFromUserToOtherChainsSupply = useCallback(async (network, tokenIds) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a4ReceiveTnftFromUserToOtherChainsSupply', tokenIds);
-    } else {
-      return callNodeFlareFunction('a4ReceiveTnftFromUserToOtherChainsSupply', tokenIds);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a4ReceiveTnftFromUserToOtherChainsSupply',
+      () => callNodeEthereumFunction('a4ReceiveTnftFromUserToOtherChainsSupply', tokenIds),
+      () => callNodeFlareFunction('a4ReceiveTnftFromUserToOtherChainsSupply', tokenIds),
+      () => callNodeBSCFunction('a4ReceiveTnftFromUserToOtherChainsSupply', tokenIds)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const setA5SendTnftToUserFromOtherChainsSupply = useCallback(async (network, to, tokenIds) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('a5SendTnftToUserFromOtherChainsSupply', to, tokenIds);
-    } else {
-      return callNodeFlareFunction('a5SendTnftToUserFromOtherChainsSupply', to, tokenIds);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'a5SendTnftToUserFromOtherChainsSupply',
+      () => callNodeEthereumFunction('a5SendTnftToUserFromOtherChainsSupply', to, tokenIds),
+      () => callNodeFlareFunction('a5SendTnftToUserFromOtherChainsSupply', to, tokenIds),
+      () => callNodeBSCFunction('a5SendTnftToUserFromOtherChainsSupply', to, tokenIds)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const setMint = useCallback(async (network, mintParams) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('mint', mintParams);
-    } else {
-      return callNodeFlareFunction('mint', mintParams);
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'mint',
+      () => callNodeEthereumFunction('mint', mintParams),
+      () => callNodeFlareFunction('mint', mintParams),
+      () => callNodeBSCFunction('mint', mintParams)
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   const setWhitelistMint = useCallback(async (network) => {
-    if (network === 'ethereum') {
-      return callNodeEthereumFunction('whitelistMint');
-    } else {
-      return callNodeFlareFunction('whitelistMint');
-    }
-  }, [callNodeEthereumFunction, callNodeFlareFunction]);
+    return callByNetwork(network, 'whitelistMint',
+      () => callNodeEthereumFunction('whitelistMint'),
+      () => callNodeFlareFunction('whitelistMint'),
+      () => callNodeBSCFunction('whitelistMint')
+    );
+  }, [callByNetwork, callNodeEthereumFunction, callNodeFlareFunction, callNodeBSCFunction]);
 
   return {
     // View Functions
