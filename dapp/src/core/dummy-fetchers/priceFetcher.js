@@ -6,11 +6,27 @@ import { setNodePriceState } from '../../nodes/useNodePrices';
 
 const FEED_INDEXES = [0, 9]; // Indices for FLR/USD and ETH/USD
 
+const fetchBnbPrice = async () => {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd');
+    const data = await res.json();
+    return data.binancecoin?.usd || 0;
+  } catch (err) {
+    console.error('BNB price fetch failed:', err);
+    return 0;
+  }
+};
+
 const PriceFetcher = () => {
   const fetchPrices = useCallback(async () => {
     try {
-      const [feeds, decimals] = await FlarePriceInteraction.fetchCurrentFeeds(FEED_INDEXES);
-      
+      const [feedResult, bnbPrice] = await Promise.all([
+        FlarePriceInteraction.fetchCurrentFeeds(FEED_INDEXES),
+        fetchBnbPrice()
+      ]);
+
+      const [feeds, decimals] = feedResult;
+
       const flrIndex = decimals.findIndex(dec => dec === 7);
       const ethIndex = decimals.findIndex(dec => dec === 3);
 
@@ -27,16 +43,16 @@ const PriceFetcher = () => {
       const flrPrice = Number(ethers.utils.formatUnits(flrFeed, flrDecimals));
       const ethPrice = Number(ethers.utils.formatUnits(ethFeed, ethDecimals));
 
-      // Set raw prices in both states
       const rawPrices = {
         ethUsd: ethPrice,
         flrUsd: flrPrice,
+        bnbUsd: bnbPrice,
       };
 
-      setPriceState(rawPrices);      // Set for main price hook
-      setNodePriceState(rawPrices);  // Set for node price hook
+      setPriceState(rawPrices);
+      setNodePriceState(rawPrices);
 
-      console.log("Raw prices fetched successfully", { ethPrice, flrPrice });
+      console.log("Raw prices fetched successfully", { ethPrice, flrPrice, bnbPrice });
     } catch (error) {
       console.error("Error fetching prices:", error);
     }

@@ -4,6 +4,7 @@ import NodeProgressBar from './NodeProgressBar';
 import { useNodeReadOnly } from './useNodeReadOnlyState';
 import { useNodePrices } from './useNodePrices';
 import { Spinner } from 'react-bootstrap';
+import { IS_STAGING } from '../config/environment';
 
 const NodeRemainingToMint = () => {
     const {
@@ -32,8 +33,8 @@ const NodeRemainingToMint = () => {
     const totalRemaining = Math.max(MAX_SUPPLY - totalMinted, 0);
 
     // Check if values meet the minimum thresholds
-    const isLoadingPrice = currentNodePriceUSD < 6;
-    const isLoadingTotal = totalMinted < 1526;
+    const isLoadingPrice = IS_STAGING ? currentNodePriceUSD < 1 : currentNodePriceUSD < 6;
+    const isLoadingTotal = IS_STAGING ? false : totalMinted < 1526;
 
     // Create spinner component for consistent styling
     const LoadingSpinner = () => (

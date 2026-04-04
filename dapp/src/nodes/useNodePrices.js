@@ -17,6 +17,7 @@ const TIER3_STEP = 10;
 let nodePriceState = {
   ethUsd: 0,
   flrUsd: 0,
+  bnbUsd: 0,
   lastUpdateTimestamp: 0,
   dataReady: false
 };
@@ -51,16 +52,14 @@ export const useNodePrices = () => {
 
   // Check if all required blockchain data is available
   useEffect(() => {
-    const hasEthData = nodeData.EthA1CurrentChainTnftSupplyResults > 0;
-    const hasFlareData = nodeData.FlareA1CurrentChainTnftSupplyResults > 0;
     const hasPriceData = rawPrices.ethUsd > 0 && rawPrices.flrUsd > 0;
-    const hasValidTotal = nodeData.totalCurrentNodes > 0;
-    
-    setIsDataComplete(hasEthData && hasFlareData && hasPriceData && hasValidTotal);
+    const hasValidTotal = nodeData.totalCurrentNodes >= 0;
+
+    setIsDataComplete(hasPriceData && hasValidTotal);
   }, [nodeData, rawPrices]);
 
   const prices = useMemo(() => {
-    const { ethUsd, flrUsd } = rawPrices;
+    const { ethUsd, flrUsd, bnbUsd } = rawPrices;
 
     // Use the pre-calculated totalCurrentNodes value from state
     const totalCurrentNodes = nodeData.totalCurrentNodes;
@@ -98,11 +97,13 @@ export const useNodePrices = () => {
       currentNodePriceUSD,
       currentNodePriceETH: ethUsd > 0 ? currentNodePriceUSD / ethUsd : 0,
       currentNodePriceFLR: flrUsd > 0 ? currentNodePriceUSD / flrUsd : 0,
+      currentNodePriceBNB: bnbUsd > 0 ? currentNodePriceUSD / bnbUsd : 0,
       remainingNodesInThisTier,
       nextTierPriceUSD,
       EthUsdConversion: ethUsd,
       FlrUsdConversion: flrUsd,
-      isDataComplete, // Add completion flag to returned object
+      BnbUsdConversion: bnbUsd,
+      isDataComplete,
       lastUpdateTimestamp: rawPrices.lastUpdateTimestamp
     };
   }, [rawPrices, nodeData, isDataComplete]);

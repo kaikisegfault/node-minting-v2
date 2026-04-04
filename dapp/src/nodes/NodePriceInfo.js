@@ -35,10 +35,9 @@ const NodePriceInfo = () => {
   // Add a loading delay to ensure consistent UI rendering
   useEffect(() => {
     // Check if key price data is available
-    const pricesLoaded = prices.currentNodePriceETH > 0 && 
-                        prices.currentNodePriceFLR > 0 && 
-                        prices.EthUsdConversion > 0 && 
-                        prices.FlrUsdConversion > 0;
+    const pricesLoaded = prices.currentNodePriceETH > 0 &&
+                        prices.currentNodePriceFLR > 0 &&
+                        prices.EthUsdConversion > 0;
     
     if (pricesLoaded) {
       // Add a small delay to ensure smooth UI transition
@@ -51,7 +50,32 @@ const NodePriceInfo = () => {
   }, [prices]);
 
   const getPrice = (currency) => {
-    return currency === 'ETH' ? prices.currentNodePriceETH : prices.currentNodePriceFLR;
+    if (currency === 'ETH') return prices.currentNodePriceETH;
+    if (currency === 'BNB') return prices.currentNodePriceBNB;
+    return prices.currentNodePriceFLR;
+  };
+
+  const getTokenSymbol = () => {
+    if (network === 'Ethereum') return 'ETH';
+    if (network === 'Binance') return 'BNB';
+    return 'FLR';
+  };
+
+  const getTokenDecimals = () => {
+    if (network === 'Ethereum' || network === 'Binance') return 6;
+    return 2;
+  };
+
+  const getConversionLabel = () => {
+    if (network === 'Ethereum') return 'ETH/USD: ';
+    if (network === 'Binance') return 'BNB/USD: ';
+    return 'FLR/USD: ';
+  };
+
+  const getConversionValue = () => {
+    if (network === 'Ethereum') return prices.EthUsdConversion.toFixed(2);
+    if (network === 'Binance') return prices.BnbUsdConversion.toFixed(2);
+    return prices.FlrUsdConversion.toFixed(5);
   };
 
   const FlashingText = ({ children }) => (
@@ -72,11 +96,8 @@ const NodePriceInfo = () => {
           ) : (
             <p>
               <FlashingText>
-                {network === 'Ethereum'
-                  ? getPrice('ETH').toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })
-                  : getPrice('FLR').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                }
-              </FlashingText> {network === 'Ethereum' ? 'ETH' : 'FLR'}
+                {getPrice(getTokenSymbol()).toLocaleString(undefined, { minimumFractionDigits: getTokenDecimals(), maximumFractionDigits: getTokenDecimals() })}
+              </FlashingText> {getTokenSymbol()}
             </p>
           )}
         </div>
@@ -88,8 +109,8 @@ const NodePriceInfo = () => {
               <p>FLR/USD: $0.00000</p>
             </>
           ) : (
-            <p>{network === 'Ethereum' ? 'ETH/USD: ' : 'FLR/USD: '}
-              <FlashingText>${network === 'Ethereum' ? prices.EthUsdConversion.toFixed(2) : prices.FlrUsdConversion.toFixed(5)}</FlashingText>
+            <p>{getConversionLabel()}
+              <FlashingText>${getConversionValue()}</FlashingText>
             </p>
           )}
         </div>
@@ -115,11 +136,8 @@ const NodePriceInfo = () => {
           ) : (
             <p>
               <FlashingText>
-                {network === 'Ethereum'
-                  ? getPrice('ETH').toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })
-                  : getPrice('FLR').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                }
-              </FlashingText> {network === 'Ethereum' ? 'ETH' : 'FLR'}
+                {getPrice(getTokenSymbol()).toLocaleString(undefined, { minimumFractionDigits: getTokenDecimals(), maximumFractionDigits: getTokenDecimals() })}
+              </FlashingText> {getTokenSymbol()}
             </p>
           )}
         </div>
@@ -131,8 +149,8 @@ const NodePriceInfo = () => {
               <p>FLR/USD: <FlashingText>${prices.FlrUsdConversion.toFixed(5)}</FlashingText></p>
             </>
           ) : (
-            <p>{network === 'Ethereum' ? 'ETH/USD: ' : 'FLR/USD: '}
-              <FlashingText>${network === 'Ethereum' ? prices.EthUsdConversion.toFixed(2) : prices.FlrUsdConversion.toFixed(5)}</FlashingText>
+            <p>{getConversionLabel()}
+              <FlashingText>${getConversionValue()}</FlashingText>
             </p>
           )}
         </div>
