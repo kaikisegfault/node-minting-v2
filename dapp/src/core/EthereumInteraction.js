@@ -1,15 +1,16 @@
 import { ethers } from 'ethers';
 import ETH_ABI from '../abis/ETH_ABI.json';
 import NODE_ABI from '../abis/NODE_ABI.json';
+import { CONFIG } from '../config/environment';
 
 const ETHEREUM_CONFIG = {
-  chainId: '0x1',  
+  chainId: CONFIG.providers.ethereum.chainId,
   contractAddress: process.env.REACT_APP_CONTRACT_ADDRESS,
-  websocket: `wss://eth-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`,  
+  websocket: CONFIG.providers.ethereum.websocket,
   abi: ETH_ABI
 };
 const NODE_CONFIG = {
-  contractAddress: process.env.REACT_APP_NODE_CONTRACT_ADDRESS,
+  contractAddress: CONFIG.contracts.node,
   abi: NODE_ABI
 };
 
@@ -20,8 +21,7 @@ let nodeContract = null;
 const getProvider = () => {
   if (!provider) {
     provider = new ethers.providers.WebSocketProvider(ETHEREUM_CONFIG.websocket);
-    
-    // Setup provider event listeners
+
     provider._websocket.onerror = (error) => {
       console.error('Ethereum WebSocket Error:', error);
       handleProviderError();
@@ -40,7 +40,6 @@ const handleProviderError = () => {
   contract = null;
   nodeContract = null;
 
-  // Wait a bit before attempting to reconnect
   setTimeout(() => {
     try {
       getProvider();
@@ -51,17 +50,17 @@ const handleProviderError = () => {
 };
 
 const getContract = () => {
-  if (!contract) {
-    const provider = getProvider();
-    contract = new ethers.Contract(ETHEREUM_CONFIG.contractAddress, ETHEREUM_CONFIG.abi, provider);
+  if (!contract && ETHEREUM_CONFIG.contractAddress) {
+    const p = getProvider();
+    contract = new ethers.Contract(ETHEREUM_CONFIG.contractAddress, ETHEREUM_CONFIG.abi, p);
   }
   return contract;
 };
 
 const getNodeContract = () => {
-  if (!nodeContract) {
-    const provider = getProvider();
-    nodeContract = new ethers.Contract(NODE_CONFIG.contractAddress, NODE_CONFIG.abi, provider);
+  if (!nodeContract && NODE_CONFIG.contractAddress) {
+    const p = getProvider();
+    nodeContract = new ethers.Contract(NODE_CONFIG.contractAddress, NODE_CONFIG.abi, p);
   }
   return nodeContract;
 };

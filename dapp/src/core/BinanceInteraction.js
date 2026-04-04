@@ -52,14 +52,14 @@ const handleProviderError = () => {
 };
 
 const getNodeContract = () => {
-  if (!nodeContract) {
+  if (!nodeContract && NODE_CONFIG.contractAddress) {
     const p = getProvider();
     nodeContract = new ethers.Contract(NODE_CONFIG.contractAddress, NODE_CONFIG.abi, p);
   }
   return nodeContract;
 };
 
-export const NodeBSCInteraction = getNodeContract();
+export const NodeBSCInteraction = NODE_CONFIG.contractAddress ? getNodeContract() : null;
 
 export const destroyBSCConnection = () => {
   if (provider && provider._websocket && provider._websocket.readyState === WebSocket.OPEN) {

@@ -2,11 +2,12 @@ import { ethers } from 'ethers';
 import FLARE_ABI from '../abis/FLARE_ABI.json';
 import MINERALS_ABI from '../abis/MINERALS_ABI.json';
 import NODE_ABI from '../abis/NODE_ABI.json';
+import { CONFIG } from '../config/environment';
 
 const FLARE_CONFIG = {
-  chainId: '0xe',
+  chainId: CONFIG.providers.flare.chainId,
   contractAddress: process.env.REACT_APP_CONTRACT_ADDRESS,
-  websocket: process.env.REACT_APP_FLARE_WEBSOCKET,
+  websocket: CONFIG.providers.flare.websocket,
   abi: FLARE_ABI
 };
 
@@ -16,7 +17,7 @@ const MINERALS_CONFIG = {
 };
 
 const NODE_CONFIG = {
-  contractAddress: process.env.REACT_APP_NODE_CONTRACT_ADDRESS,
+  contractAddress: CONFIG.contracts.node,
   abi: NODE_ABI
 };
 
@@ -28,8 +29,7 @@ let nodeContract = null;
 const getProvider = () => {
   if (!provider) {
     provider = new ethers.providers.WebSocketProvider(FLARE_CONFIG.websocket);
-    
-    // Setup provider event listeners
+
     provider._websocket.onerror = (error) => {
       console.error('Flare WebSocket Error:', error);
       handleProviderError();
@@ -49,7 +49,6 @@ const handleProviderError = () => {
   mineralsContract = null;
   nodeContract = null;
 
-  // Wait a bit before attempting to reconnect
   setTimeout(() => {
     try {
       getProvider();
@@ -60,25 +59,25 @@ const handleProviderError = () => {
 };
 
 const getContract = () => {
-  if (!contract) {
-    const provider = getProvider();
-    contract = new ethers.Contract(FLARE_CONFIG.contractAddress, FLARE_CONFIG.abi, provider);
+  if (!contract && FLARE_CONFIG.contractAddress) {
+    const p = getProvider();
+    contract = new ethers.Contract(FLARE_CONFIG.contractAddress, FLARE_CONFIG.abi, p);
   }
   return contract;
 };
 
 const getMineralsContract = () => {
-  if (!mineralsContract) {
-    const provider = getProvider();
-    mineralsContract = new ethers.Contract(MINERALS_CONFIG.contractAddress, MINERALS_CONFIG.abi, provider);
+  if (!mineralsContract && MINERALS_CONFIG.contractAddress) {
+    const p = getProvider();
+    mineralsContract = new ethers.Contract(MINERALS_CONFIG.contractAddress, MINERALS_CONFIG.abi, p);
   }
   return mineralsContract;
 };
 
 const getNodeContract = () => {
-  if (!nodeContract) {
-    const provider = getProvider();
-    nodeContract = new ethers.Contract(NODE_CONFIG.contractAddress, NODE_CONFIG.abi, provider);
+  if (!nodeContract && NODE_CONFIG.contractAddress) {
+    const p = getProvider();
+    nodeContract = new ethers.Contract(NODE_CONFIG.contractAddress, NODE_CONFIG.abi, p);
   }
   return nodeContract;
 };

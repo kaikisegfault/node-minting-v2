@@ -22,11 +22,11 @@ const CONFIGS = {
     },
     providers: {
       ethereum: {
-        websocket: `wss://eth-mainnet.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`,
+        websocket: 'wss://eth-mainnet.g.alchemy.com/v2/BARDUqmrhPMi8Xl2hIMOHYL72cMd2a_5',
         chainId: '0x1',
       },
       flare: {
-        websocket: process.env.REACT_APP_FLARE_WEBSOCKET || 'wss://flare-api.flare.network/ext/bc/C/ws',
+        websocket: 'wss://flare-api.flare.network/ext/bc/C/ws',
         rpc: 'https://flare-api.flare.network/ext/bc/C/rpc',
         chainId: '0xe',
       },
@@ -51,12 +51,12 @@ const CONFIGS = {
     },
     providers: {
       ethereum: {
-        websocket: `wss://eth-sepolia.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`,
+        websocket: 'wss://ethereum-sepolia-rpc.publicnode.com',
         rpc: 'https://ethereum-sepolia-rpc.publicnode.com',
         chainId: '0xaa36a7',
       },
       flare: {
-        websocket: process.env.REACT_APP_FLARE_WEBSOCKET || 'wss://flare-api.flare.network/ext/bc/C/ws',
+        websocket: 'wss://flare-rpc.publicnode.com',
         rpc: 'https://flare-api.flare.network/ext/bc/C/rpc',
         chainId: '0xe',
       },

@@ -1,8 +1,9 @@
 import { ethers } from 'ethers';
+import { CONFIG } from '../config/environment';
 
 const FLARE_PRICE_CONFIG = {
-  httpRpc: "https://flare-api.flare.network/ext/C/rpc",
-  contractAddress: "0xB18d3A5e5A85C65cE47f977D7F486B79F99D3d32", // FtsoV2 contract address
+  httpRpc: CONFIG.priceOracle.rpc,
+  contractAddress: CONFIG.priceOracle.contract,
   abi: ["function getFeedsByIndex(uint256[] _indices) external view returns (uint256[] _values, int8[] _decimals, uint64 _timestamp)"]
 };
 
