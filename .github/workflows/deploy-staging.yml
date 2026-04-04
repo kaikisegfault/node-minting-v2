@@ -2,13 +2,17 @@ name: Deploy Staging to S3
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -49,3 +53,7 @@ jobs:
 
       - name: Deploy site/ to S3
         run: aws s3 sync site/ s3://staging-mint-page/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id EI3ARKORQ38HJ --paths "/*"
