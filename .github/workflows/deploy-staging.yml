@@ -25,7 +25,7 @@ jobs:
 
       - name: Build React DApp
         working-directory: dapp
-        run: GENERATE_SOURCEMAP=false npm run build
+        run: CI=false GENERATE_SOURCEMAP=false npm run build
 
       - name: Integrate build into site
         run: |
