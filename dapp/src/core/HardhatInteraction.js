@@ -43,3 +43,20 @@ export const getLocalContractAddress = (simulatedNetwork) => {
     default: return ETH_ADDR;
   }
 };
+
+// Emitter to sync simulated chain selection across components
+export const simulatedChainEmitter = {
+  _current: 'Ethereum',
+  _listeners: new Set(),
+  emit(chain) {
+    this._current = chain;
+    this._listeners.forEach(fn => fn(chain));
+  },
+  getCurrent() {
+    return this._current;
+  },
+  subscribe(fn) {
+    this._listeners.add(fn);
+    return () => this._listeners.delete(fn);
+  }
+};

@@ -2,22 +2,33 @@ import React, { useState, useEffect } from 'react';
 import Selector from '../ui-components/Selector';
 import useWalletConnection from '../core/useWalletConnection';
 import PopupNotification from '../ui-components/PopupNotification';
+import { isLocalMode, simulatedChainEmitter } from '../core/HardhatInteraction';
 
 const createSwitchNetwork = (versionId) => {
   return () => {
     const { network, switchNetwork, checkNetworkSwitchPending, addFlareNetwork } = useWalletConnection();
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
+    const [localChain, setLocalChain] = useState('Ethereum');
 
-    // added block
     useEffect(() => {
       if (!checkNetworkSwitchPending()) {
         setShowNotification(false);
       }
     }, [checkNetworkSwitchPending]);
 
+    // In local Hardhat mode, just update the simulated chain — no MetaMask switch
+    const isHardhatLocal = network === 'Hardhat Local' && isLocalMode();
+
     const handleNetworkChange = async (selectedNetwork) => {
       console.log(`Network selected for ${versionId}:`, selectedNetwork);
+
+      if (isHardhatLocal) {
+        setLocalChain(selectedNetwork);
+        simulatedChainEmitter.emit(selectedNetwork);
+        return;
+      }
+
       if (checkNetworkSwitchPending()) {
         setNotificationMessage("check the wallet and complete the pending request");
         setShowNotification(true);
@@ -44,25 +55,33 @@ const createSwitchNetwork = (versionId) => {
     };
 
     const getTitle = () => {
-      return network === 'Ethereum' || network === 'Flare' ? "Switch Network" : "Choose Network to MINT";
+      if (isHardhatLocal) return "Simulate Chain";
+      return network === 'Ethereum' || network === 'Flare' || network === 'Binance Smart Chain'
+        ? "Switch Network" : "Choose Network to MINT";
     };
+
+    const options = isHardhatLocal
+      ? ['Ethereum', 'Flare', 'Binance Smart Chain']
+      : ['Ethereum', 'Flare', 'Binance Smart Chain'];
+
+    const selectedOption = isHardhatLocal ? localChain : network;
 
     return (
       <div id={versionId}>
         <Selector
           title={getTitle()}
-          options={['Ethereum', 'Flare']}
+          options={options}
           onChange={handleNetworkChange}
-          selectedOption={network}
+          selectedOption={selectedOption}
           disabledOptions={['none']}
           defaultSelected="none"
           name={versionId}
-          disabled={checkNetworkSwitchPending()}
+          disabled={!isHardhatLocal && checkNetworkSwitchPending()}
         />
         {showNotification && (
-          <PopupNotification 
-            message={notificationMessage} 
-            onClose={closeNotification} 
+          <PopupNotification
+            message={notificationMessage}
+            onClose={closeNotification}
           />
         )}
       </div>
