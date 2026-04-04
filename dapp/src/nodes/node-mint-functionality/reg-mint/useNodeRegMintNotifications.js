@@ -230,8 +230,10 @@ const useNodeRegMintNotifications = () => {
             );
         }
 
-        const currentPrice = network === 'Ethereum' 
+        const currentPrice = network === 'Ethereum'
             ? `${prices.currentNodePriceETH.toFixed(6)} ETH`
+            : network === 'Binance'
+            ? `${prices.currentNodePriceBNB.toFixed(6)} BNB`
             : `${prices.currentNodePriceFLR.toFixed(2)} FLR`;
 
         const content = (
