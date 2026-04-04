@@ -242,6 +242,8 @@ const chainIdToName = (chainId) => {
       return 'Flare Testnet';
     case '0x25':
       return 'Songbird Testnet';
+    case '0x7a69':
+      return 'Hardhat Local';
     default:
       return 'Unknown Network';
   }

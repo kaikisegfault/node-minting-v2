@@ -1,10 +1,12 @@
 import { useCallback } from 'react';
 import { NodeEthereumInteraction, NodeFlareInteraction } from '../core/contractInteractions';
+import { isLocalMode, NodeHardhatEth, NodeHardhatFlare, NodeHardhatBsc } from '../core/HardhatInteraction';
 
 export const useNodeFunctions = () => {
   const callNodeEthereumFunction = useCallback(async (functionName, ...args) => {
     try {
-      const result = await NodeEthereumInteraction[functionName](...args);
+      const contract = isLocalMode() ? NodeHardhatEth : NodeEthereumInteraction;
+      const result = await contract[functionName](...args);
       return result;
     } catch (err) {
       console.error(`Error calling Node Ethereum ${functionName}:`, err);
@@ -14,7 +16,8 @@ export const useNodeFunctions = () => {
 
   const callNodeFlareFunction = useCallback(async (functionName, ...args) => {
     try {
-      const result = await NodeFlareInteraction[functionName](...args);
+      const contract = isLocalMode() ? NodeHardhatFlare : NodeFlareInteraction;
+      const result = await contract[functionName](...args);
       return result;
     } catch (err) {
       console.error(`Error calling Node Flare ${functionName}:`, err);
