@@ -1,10 +1,23 @@
-import { DynamoDB } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { ethers } from 'ethers';
 import axios from 'axios';
 
-// Response helper
+// ---- Adapter imports (swapped based on LOCAL_MODE) ----
+let dynamodb, secretsClient;
+
+if (process.env.LOCAL_MODE === 'true') {
+    const { LocalDynamoDB, LocalSecretsManager } = await import('./local-adapters.mjs');
+    dynamodb = new LocalDynamoDB();
+    secretsClient = new LocalSecretsManager();
+    console.log('[LOCAL MODE] Using in-memory DynamoDB and env-based signer');
+} else {
+    const { DynamoDB } = await import('@aws-sdk/client-dynamodb');
+    const { DynamoDBDocument } = await import('@aws-sdk/lib-dynamodb');
+    const { SecretsManagerClient } = await import('@aws-sdk/client-secrets-manager');
+    dynamodb = DynamoDBDocument.from(new DynamoDB());
+    secretsClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "us-east-1" });
+}
+
+// ---- Response helper ----
 const CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -19,7 +32,7 @@ function createResponse(statusCode, body) {
     };
 }
 
-// Universal timestamp functions
+// ---- Timestamp helpers ----
 function getCurrentTimestamp() {
     return Date.now();
 }
@@ -28,38 +41,49 @@ function getSignatureTimestamp(expiryTimestamp) {
     return Math.floor(expiryTimestamp / 1000) - 420;
 }
 
-const dynamodb = DynamoDBDocument.from(new DynamoDB());
-const secretsClient = new SecretsManagerClient({ region: "us-east-1" });
-
-const TABLE_NAME = 'NodeMintQueue';
+// ---- Configuration ----
+const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'NodeMintQueue';
 const QUEUE_TIMEOUT = 60000;
 
+const SUPPLY_ABI = [
+    "function a1CurrentChainTnftSupply() external view returns (uint256)",
+    "function a2OtherChainsTnftSupply() external view returns (uint256)",
+    "function getBatchPriceInUSD(uint256 startId, uint256 endId) external pure returns (uint256)",
+    "function whitelistMintedCount() external view returns (uint256)"
+];
+
 const ETH_NODE_CONFIG = {
-    rpc: "https://eth-mainnet.g.alchemy.com/v2/QaamYH_yJ2Kv6q20jiJKEHF7ooR2AQ5s",
-    contractAddress: "0x468F1F91fc674e0161533363B13c2ccBE3769981",
-    abi: [
-        "function a1CurrentChainTnftSupply() external view returns (uint256)",
-        "function getBatchPriceInUSD(uint256 startId, uint256 endId) external pure returns (uint256)",
-        "function a2OtherChainsTnftSupply() external view returns (uint256)"
-    ]
+    rpc: process.env.ETH_RPC_URL || "https://eth-mainnet.g.alchemy.com/v2/QaamYH_yJ2Kv6q20jiJKEHF7ooR2AQ5s",
+    contractAddress: process.env.ETH_CONTRACT_ADDRESS || "0x468F1F91fc674e0161533363B13c2ccBE3769981",
+    abi: SUPPLY_ABI
 };
 
 const FLARE_NODE_CONFIG = {
-    rpc: "https://flare-api.flare.network/ext/bc/C/rpc",
-    contractAddress: "0x468F1F91fc674e0161533363B13c2ccBE3769981",
-    abi: [
-        "function a1CurrentChainTnftSupply() external view returns (uint256)",
-        "function whitelistMintedCount() external view returns (uint256)",
-        "function a2OtherChainsTnftSupply() external view returns (uint256)"
-    ]
+    rpc: process.env.FLARE_RPC_URL || "https://flare-api.flare.network/ext/bc/C/rpc",
+    contractAddress: process.env.FLARE_CONTRACT_ADDRESS || "0x468F1F91fc674e0161533363B13c2ccBE3769981",
+    abi: SUPPLY_ABI
+};
+
+const BSC_NODE_CONFIG = {
+    rpc: process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.org/",
+    contractAddress: process.env.BSC_CONTRACT_ADDRESS || "0x468F1F91fc674e0161533363B13c2ccBE3769981",
+    abi: SUPPLY_ABI
 };
 
 const FLARE_PRICE_CONFIG = {
-    httpRpc: "https://flare-api.flare.network/ext/bc/C/rpc",
-    contractAddress: "0xB18d3A5e5A85C65cE47f977D7F486B79F99D3d32",
+    httpRpc: process.env.FLARE_RPC_URL || "https://flare-api.flare.network/ext/bc/C/rpc",
+    contractAddress: process.env.FLARE_PRICE_FEED_CONTRACT || "0xB18d3A5e5A85C65cE47f977D7F486B79F99D3d32",
     abi: ["function getFeedsByIndex(uint256[] _indices) external view returns (uint256[] _values, int8[] _decimals, uint64 _timestamp)"]
 };
+
+const CMC_API_KEY = process.env.CMC_API_KEY || 'cc50e0f6-a6e3-4261-9dc7-d85000960c86';
+
+// ---- Signer key ----
 async function getSignerKey() {
+    if (process.env.LOCAL_MODE === 'true') {
+        return process.env.SIGNER_PRIVATE_KEY;
+    }
+    const { GetSecretValueCommand } = await import('@aws-sdk/client-secrets-manager');
     const command = new GetSecretValueCommand({
         SecretId: "NodeSignatureGeneratorPrivateKey"
     });
@@ -68,7 +92,17 @@ async function getSignerKey() {
     return secretData.NodeSignatureSignerSecretKey;
 }
 
+// ---- Price feeds ----
 async function fetchPrices() {
+    // In local mode, return mock prices
+    if (process.env.LOCAL_MODE === 'true') {
+        return {
+            flrPrice: Number(process.env.MOCK_FLR_PRICE || '0.02'),
+            ethPrice: Number(process.env.MOCK_ETH_PRICE || '3000'),
+            bnbPrice: Number(process.env.MOCK_BNB_PRICE || '600')
+        };
+    }
+
     try {
         const provider = new ethers.providers.JsonRpcProvider(FLARE_PRICE_CONFIG.httpRpc);
         const contract = new ethers.Contract(
@@ -80,10 +114,27 @@ async function fetchPrices() {
         const [feeds, decimals] = await contract.getFeedsByIndex([0, 9]);
         return {
             flrPrice: Number(ethers.utils.formatUnits(feeds[0], decimals[0])),
-            ethPrice: Number(ethers.utils.formatUnits(feeds[1], decimals[1]))
+            ethPrice: Number(ethers.utils.formatUnits(feeds[1], decimals[1])),
+            bnbPrice: await fetchBnbPrice()
         };
     } catch (error) {
         return fetchPricesFromCMC();
+    }
+}
+
+async function fetchBnbPrice() {
+    try {
+        const response = await axios.get(
+            'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
+            {
+                params: { symbol: 'BNB', convert: 'USD' },
+                headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY }
+            }
+        );
+        return response.data.data.BNB.quote.USD.price;
+    } catch (error) {
+        console.error('Failed to fetch BNB price:', error.message);
+        return 600; // fallback
     }
 }
 
@@ -91,40 +142,44 @@ async function fetchPricesFromCMC() {
     const response = await axios.get(
         'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
         {
-            params: { symbol: 'FLR,ETH', convert: 'USD' },
-            headers: { 'X-CMC_PRO_API_KEY': 'cc50e0f6-a6e3-4261-9dc7-d85000960c86' }
+            params: { symbol: 'FLR,ETH,BNB', convert: 'USD' },
+            headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY }
         }
     );
     const { data } = response.data;
     return {
         flrPrice: data.FLR.quote.USD.price,
-        ethPrice: data.ETH.quote.USD.price
+        ethPrice: data.ETH.quote.USD.price,
+        bnbPrice: data.BNB.quote.USD.price
     };
 }
 
-// This is the critical change needed to fetch both current and other chain supplies
+// ---- Chain supply reads (3-chain) ----
 async function getChainSupplies() {
     const ethProvider = new ethers.providers.JsonRpcProvider(ETH_NODE_CONFIG.rpc);
     const flareProvider = new ethers.providers.JsonRpcProvider(FLARE_NODE_CONFIG.rpc);
+    const bscProvider = new ethers.providers.JsonRpcProvider(BSC_NODE_CONFIG.rpc);
 
-    const ethContract = new ethers.Contract(
-        ETH_NODE_CONFIG.contractAddress,
-        ETH_NODE_CONFIG.abi,
-        ethProvider
-    );
-    const flareContract = new ethers.Contract(
-        FLARE_NODE_CONFIG.contractAddress,
-        FLARE_NODE_CONFIG.abi,
-        flareProvider
-    );
+    const ethContract = new ethers.Contract(ETH_NODE_CONFIG.contractAddress, ETH_NODE_CONFIG.abi, ethProvider);
+    const flareContract = new ethers.Contract(FLARE_NODE_CONFIG.contractAddress, FLARE_NODE_CONFIG.abi, flareProvider);
+    const bscContract = new ethers.Contract(BSC_NODE_CONFIG.contractAddress, BSC_NODE_CONFIG.abi, bscProvider);
 
-    const [ethSupply, ethOtherChainSupply, flareSupply, flareOtherChainSupply, whitelistMinted] = await Promise.all([
+    const [
+        ethSupply, ethOtherChainSupply,
+        flareSupply, flareOtherChainSupply, whitelistMinted,
+        bscSupply, bscOtherChainSupply
+    ] = await Promise.all([
         ethContract.a1CurrentChainTnftSupply(),
         ethContract.a2OtherChainsTnftSupply(),
         flareContract.a1CurrentChainTnftSupply(),
         flareContract.a2OtherChainsTnftSupply(),
-        flareContract.whitelistMintedCount()
+        flareContract.whitelistMintedCount(),
+        bscContract.a1CurrentChainTnftSupply(),
+        bscContract.a2OtherChainsTnftSupply()
     ]);
+
+    // Total actual minted across all chains (excluding whitelist reserve double-count)
+    const totalSupply = ethSupply.add(flareSupply).add(bscSupply).sub(whitelistMinted);
 
     return {
         ethSupply,
@@ -132,9 +187,13 @@ async function getChainSupplies() {
         flareSupply,
         flareOtherChainSupply,
         whitelistMinted,
-        totalSupply: ethSupply.add(flareSupply).sub(whitelistMinted)
+        bscSupply,
+        bscOtherChainSupply,
+        totalSupply
     };
 }
+
+// ---- Queue operations ----
 async function getQueueData(network) {
     const { Items = [] } = await dynamodb.scan({
         TableName: TABLE_NAME,
@@ -172,10 +231,6 @@ async function updateQueuePositions(queueData, network) {
         const position = (index + 1).toString();
         const isFirst = index === 0;
 
-        // ONLY assign timestamp if:
-        // 1. It's first position
-        // 2. Status is inQueue
-        // 3. NO existing timestamp (null or undefined)
         const expiryTimestamp = isFirst && entry.status === 'inQueue' && !entry.expiryTimestamp ?
             getCurrentTimestamp() : entry.expiryTimestamp;
 
@@ -231,7 +286,6 @@ async function handleExpiredEntries(queueData) {
 
 async function handleDuplicateAddress(address, network, randomNonce) {
     const queueData = await getQueueData(network);
-    // First find ANY entry with same address and DIFFERENT nonce
     const duplicateEntry = queueData.find(entry =>
         !entry.concluded &&
         entry.address.toLowerCase() === address.toLowerCase() &&
@@ -255,7 +309,7 @@ async function handleDuplicateAddress(address, network, randomNonce) {
     return false;
 }
 
-
+// ---- Main handler ----
 export const handler = async (event) => {
     try {
         const body = JSON.parse(event.body);
@@ -278,35 +332,21 @@ export const handler = async (event) => {
                 const isTerminalStatus = ['minted', 'rejected', 'failed', 'expired'].includes(statusUpdate);
 
                 if (statusUpdate === 'waiting-receipt') {
-                    // Only update status for waiting-receipt
                     await dynamodb.update({
                         TableName: TABLE_NAME,
-                        Key: {
-                            address,
-                            randomNonce
-                        },
+                        Key: { address, randomNonce },
                         UpdateExpression: 'SET #status = :status',
                         ConditionExpression: 'attribute_exists(address) AND attribute_exists(randomNonce)',
-                        ExpressionAttributeNames: {
-                            '#status': 'status'
-                        },
-                        ExpressionAttributeValues: {
-                            ':status': statusUpdate
-                        }
+                        ExpressionAttributeNames: { '#status': 'status' },
+                        ExpressionAttributeValues: { ':status': statusUpdate }
                     });
                 } else {
-                    // Keep original behavior for all other statuses
                     await dynamodb.update({
                         TableName: TABLE_NAME,
-                        Key: {
-                            address,
-                            randomNonce
-                        },
+                        Key: { address, randomNonce },
                         UpdateExpression: 'SET #status = :status, concluded = :concluded, queuePosition = :queuePosition, expiryTimestamp = :expiryTimestamp',
                         ConditionExpression: 'attribute_exists(address) AND attribute_exists(randomNonce)',
-                        ExpressionAttributeNames: {
-                            '#status': 'status'
-                        },
+                        ExpressionAttributeNames: { '#status': 'status' },
                         ExpressionAttributeValues: {
                             ':status': statusUpdate,
                             ':concluded': isTerminalStatus,
@@ -320,27 +360,20 @@ export const handler = async (event) => {
                     await updateQueuePositions(queueData, network);
                 }
 
-                return createResponse(200, {
-                    success: true,
-                    queueData: queueData
-                });
+                return createResponse(200, { success: true, queueData });
             } catch (error) {
                 if (error.name === 'ConditionalCheckFailedException') {
-                    return createResponse(409, {
-                        error: 'Queue entry not found',
-                        queueData: queueData
-                    });
+                    return createResponse(409, { error: 'Queue entry not found', queueData });
                 }
                 throw error;
             }
         }
 
-        // In the mint request handling section:
+        // Mint request handling
         if (mintAmount) {
             try {
                 console.log('Starting mint request handling:', { address, network, randomNonce, mintAmount });
 
-                // FIRST: Always handle expired entries, including if requester's entry is expired
                 queueData = await getQueueData(network);
                 const hasExpiredEntries = await handleExpiredEntries(queueData);
                 if (hasExpiredEntries) {
@@ -349,26 +382,21 @@ export const handler = async (event) => {
                     queueData = await getQueueData(network);
                 }
 
-                // First check if ANY entry exists with same address+nonce (including expired/concluded)
                 const anyExistingEntry = queueData.find(entry =>
                     entry.address.toLowerCase() === address.toLowerCase() &&
                     entry.randomNonce === randomNonce
                 );
 
                 if (anyExistingEntry) {
-                    // If entry exists but is concluded, update queue positions first
                     if (anyExistingEntry.concluded) {
                         await updateQueuePositions(queueData, network);
                         queueData = await getQueueData(network);
-                        return createResponse(200, {
-                            queueData: queueData
-                        });
+                        return createResponse(200, { queueData });
                     }
-                    // If entry exists and is not concluded, continue with normal flow
+
                     await updateQueuePositions(queueData, network);
                     queueData = await getQueueData(network);
 
-                    // Then check if it's in first position
                     const updatedEntry = queueData.find(entry =>
                         !entry.concluded &&
                         entry.address.toLowerCase() === address.toLowerCase() &&
@@ -378,26 +406,17 @@ export const handler = async (event) => {
                     if (updatedEntry.queuePosition === '1' && updatedEntry.status === 'inQueue') {
                         await dynamodb.update({
                             TableName: TABLE_NAME,
-                            Key: {
-                                address,
-                                randomNonce
-                            },
+                            Key: { address, randomNonce },
                             UpdateExpression: 'SET #status = :status',
-                            ExpressionAttributeNames: {
-                                '#status': 'status'
-                            },
-                            ExpressionAttributeValues: {
-                                ':status': 'waiting-user-confirmation'
-                            }
+                            ExpressionAttributeNames: { '#status': 'status' },
+                            ExpressionAttributeValues: { ':status': 'waiting-user-confirmation' }
                         });
                         queueData = await getQueueData(network);
                     }
                 } else {
-                    // Different address or nonce - handle duplicate and create new entry
                     await handleDuplicateAddress(address, network, randomNonce);
                     queueData = await getQueueData(network);
 
-                    // Create new entry
                     const activeEntries = queueData.filter(entry => !entry.concluded);
                     const newEntry = {
                         address,
@@ -415,9 +434,7 @@ export const handler = async (event) => {
                         TableName: TABLE_NAME,
                         Item: newEntry,
                         ConditionExpression: 'attribute_not_exists(address) OR concluded = :true',
-                        ExpressionAttributeValues: {
-                            ':true': true
-                        }
+                        ExpressionAttributeValues: { ':true': true }
                     });
 
                     queueData = await getQueueData(network);
@@ -425,7 +442,7 @@ export const handler = async (event) => {
                     queueData = await getQueueData(network);
                 }
 
-                // Final check for signature generation
+                // Signature generation
                 const shouldGenerateSignature = queueData.find(entry =>
                     entry.address.toLowerCase() === address.toLowerCase() &&
                     entry.randomNonce === randomNonce &&
@@ -434,50 +451,62 @@ export const handler = async (event) => {
                 );
 
                 if (shouldGenerateSignature) {
-                    console.log('Generating signature with entry:', shouldGenerateSignature);
+                    console.log('Generating signature for:', { address, network });
 
-                    // Fetch all required data for signature
                     const supplies = await getChainSupplies();
                     const prices = await fetchPrices();
-
-                    // Calculate signature timestamp from entry's expiryTimestamp
 
                     const startId = supplies.totalSupply.add(1);
                     const endId = startId.add(mintAmount).sub(1);
 
+                    // Use ETH contract for batch price (pricing is pure/same on all chains)
                     const ethProvider = new ethers.providers.JsonRpcProvider(ETH_NODE_CONFIG.rpc);
-                    const ethContract = new ethers.Contract(
-                        ETH_NODE_CONFIG.contractAddress,
-                        ETH_NODE_CONFIG.abi,
-                        ethProvider
-                    );
+                    const ethContract = new ethers.Contract(ETH_NODE_CONFIG.contractAddress, ETH_NODE_CONFIG.abi, ethProvider);
 
                     const priceInUSD = await ethContract.getBatchPriceInUSD(startId, endId);
-                    const tokenPrice = network === 'Ethereum' ? prices.ethPrice : prices.flrPrice;
+
+                    let tokenPrice;
+                    if (network === 'Ethereum') {
+                        tokenPrice = prices.ethPrice;
+                    } else if (network === 'Binance Smart Chain') {
+                        tokenPrice = prices.bnbPrice;
+                    } else {
+                        tokenPrice = prices.flrPrice;
+                    }
 
                     const nativeTokenAmount = Number(priceInUSD) / tokenPrice;
                     const value = ethers.utils.parseEther(nativeTokenAmount.toFixed(18));
 
+                    // Calculate otherChainQty — the 3-chain sync delta
                     let otherChainQty;
+
                     if (network === 'Ethereum') {
-                        // ETH logic as before
                         const ethOtherChainSupply = supplies.ethOtherChainSupply;
                         const flareCurrentSupply = supplies.flareSupply.sub(supplies.whitelistMinted);
-                        const difference = flareCurrentSupply.add(ethers.BigNumber.from(1200)).sub(ethOtherChainSupply);
+                        const actualOtherSupply = flareCurrentSupply.add(ethers.BigNumber.from(1200)).add(supplies.bscSupply);
+                        const difference = actualOtherSupply.sub(ethOtherChainSupply);
+                        otherChainQty = difference.gt(0) ? difference : ethers.BigNumber.from(0);
+                    } else if (network === 'Binance Smart Chain') {
+                        const bscOtherChainSupply = supplies.bscOtherChainSupply;
+                        const flareCurrentSupply = supplies.flareSupply.sub(supplies.whitelistMinted);
+                        const actualOtherSupply = supplies.ethSupply.add(flareCurrentSupply).add(ethers.BigNumber.from(1200));
+                        const difference = actualOtherSupply.sub(bscOtherChainSupply);
                         otherChainQty = difference.gt(0) ? difference : ethers.BigNumber.from(0);
                     } else {
-                        // Flare logic
+                        // Flare
                         const flareOtherChainSupply = supplies.flareOtherChainSupply;
-                        const ethCurrentSupply = supplies.ethSupply;
-                        const difference = ethCurrentSupply.sub(flareOtherChainSupply);
+                        const actualOtherSupply = supplies.ethSupply.add(supplies.bscSupply);
+                        const difference = actualOtherSupply.sub(flareOtherChainSupply);
                         otherChainQty = difference.gt(0) ? difference : ethers.BigNumber.from(0);
                     }
 
                     const signatureTimestamp = getSignatureTimestamp(shouldGenerateSignature.expiryTimestamp);
-                        console.log('Signature generation data:', {
-                            expiryTimestamp: shouldGenerateSignature.expiryTimestamp,
-                            calculatedSignatureTimestamp: signatureTimestamp
-                        });
+                    console.log('Signature data:', {
+                        network,
+                        otherChainQty: otherChainQty.toString(),
+                        value: value.toString(),
+                        signatureTimestamp
+                    });
 
                     const { signature } = await generateMintSignature(
                         value,
@@ -488,7 +517,7 @@ export const handler = async (event) => {
                     );
 
                     return createResponse(200, {
-                        queueData: queueData,
+                        queueData,
                         mintData: {
                             value: value.toString(),
                             otherChainQty: otherChainQty.toString(),
@@ -499,44 +528,26 @@ export const handler = async (event) => {
                     });
                 }
 
-                // Return just queue data if no signature needed
-                return createResponse(200, {
-                    queueData: queueData
-                });
+                return createResponse(200, { queueData });
 
             } catch (error) {
                 if (error.name === 'ConditionalCheckFailedException') {
                     queueData = await getQueueData(network);
-                    return createResponse(200, {
-                        queueData: queueData
-                    });
+                    return createResponse(200, { queueData });
                 }
                 console.error('Error in mint request handling:', {
                     message: error.message,
                     stack: error.stack,
-                    errorName: error.name,
-                    address,
-                    network,
-                    randomNonce
+                    address, network, randomNonce
                 });
                 throw error;
             }
         }
 
-        return createResponse(200, {
-            queueData: queueData
-        });
+        return createResponse(200, { queueData });
 
     } catch (error) {
-        if (error.name === 'ConditionalCheckFailedException') {
-            queueData = await getQueueData(network);
-            return createResponse(200, {
-                queueData: queueData
-            });
-        }
         console.error('Error:', error);
-        return createResponse(500, {
-            error: 'Internal server error'
-        });
+        return createResponse(500, { error: 'Internal server error' });
     }
 };
