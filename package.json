@@ -1,0 +1,25 @@
+{
+  "name": "node-minting-v2",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EXPL Nodes minting infrastructure: contracts, Lambda, DApp",
+  "workspaces": [
+    "contracts",
+    "lambda",
+    "dapp"
+  ],
+  "scripts": {
+    "contracts:compile": "npm run compile --workspace=contracts",
+    "contracts:test": "npm run test --workspace=contracts",
+    "contracts:deploy:local": "npm run deploy:local --workspace=contracts",
+    "lambda:dev": "npm run dev --workspace=lambda",
+    "lambda:package": "npm run package --workspace=lambda",
+    "lambda:deploy": "npm run deploy --workspace=lambda",
+    "dapp:start": "npm run start --workspace=dapp",
+    "dapp:build": "npm run build --workspace=dapp",
+    "dev": "concurrently \"npm run contracts:deploy:local\" \"npm run lambda:dev\" \"npm run dapp:start\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

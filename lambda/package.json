@@ -1,0 +1,23 @@
+{
+  "name": "node-minting-v2-lambda",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node local-server.mjs",
+    "package": "mkdir -p dist && cp index.mjs dist/ && cp package.json dist/ && cd dist && npm install --omit=dev && zip -r ../lambda-deploy.zip . && cd .. && rm -rf dist",
+    "deploy": "aws lambda update-function-code --function-name NodeMintQueue --zip-file fileb://lambda-deploy.zip --region us-east-1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.500.0",
+    "@aws-sdk/lib-dynamodb": "^3.500.0",
+    "@aws-sdk/client-secrets-manager": "^3.500.0",
+    "ethers": "^5.7.2",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0"
+  }
+}

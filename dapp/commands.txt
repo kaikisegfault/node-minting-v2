@@ -1,0 +1,10 @@
+
+
+/luka-devTnoDapp/react-web3-section
+
+npm install react-scripts
+npm install ethers@5.7.2
+
+npm run build
+
+npm start

@@ -1,0 +1,26 @@
+node_modules/
+dist/
+build/
+.env
+*.log
+coverage/
+cache/
+artifacts/
+typechain-types/
+
+# Hardhat
+contracts/cache/
+contracts/artifacts/
+contracts/typechain-types/
+
+# Lambda
+lambda/node_modules/
+lambda/*.zip
+
+# DApp
+dapp/node_modules/
+dapp/build/
+
+# OS
+.DS_Store
+Thumbs.db
