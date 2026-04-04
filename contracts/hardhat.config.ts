@@ -6,6 +6,8 @@ import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0x" + "0".repeat(64);
+const TESTNET_DEPLOYER_KEY = process.env.TESTNET_DEPLOYER_PRIVATE_KEY || DEPLOYER_PRIVATE_KEY;
+const BSC_TESTNET_DEPLOYER_KEY = process.env.BSC_TESTNET_DEPLOYER_PRIVATE_KEY || TESTNET_DEPLOYER_KEY;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -39,18 +41,18 @@ const config: HardhatUserConfig = {
 
     // Testnets
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: [DEPLOYER_PRIVATE_KEY],
+      url: process.env.SEPOLIA_RPC_URL || `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [TESTNET_DEPLOYER_KEY],
       chainId: 11155111
     },
-    flareTestnet: {
-      url: "https://coston2-api.flare.network/ext/bc/C/rpc",
-      accounts: [DEPLOYER_PRIVATE_KEY],
-      chainId: 114
+    flare: {
+      url: "https://flare-api.flare.network/ext/bc/C/rpc",
+      accounts: [TESTNET_DEPLOYER_KEY],
+      chainId: 14
     },
     bscTestnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      accounts: [DEPLOYER_PRIVATE_KEY],
+      url: process.env.BSC_TESTNET_RPC_URL || "https://bsc-testnet.bnbchain.org",
+      accounts: [BSC_TESTNET_DEPLOYER_KEY],
       chainId: 97
     },
 
@@ -59,11 +61,6 @@ const config: HardhatUserConfig = {
       url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [DEPLOYER_PRIVATE_KEY],
       chainId: 1
-    },
-    flare: {
-      url: "https://flare-api.flare.network/ext/bc/C/rpc",
-      accounts: [DEPLOYER_PRIVATE_KEY],
-      chainId: 14
     },
     bsc: {
       url: "https://bsc-dataseed.binance.org/",
