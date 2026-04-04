@@ -11,6 +11,7 @@ const getEnvironment = () => {
 };
 
 const ENV = getEnvironment();
+export const IS_STAGING = ENV === 'staging';
 
 const CONFIGS = {
   production: {

@@ -26,12 +26,9 @@ const useNodeUserMintInput = (updateRegNotification) => {
     const ethUsd = nodePrices.EthUsdConversion;
     const flrUsd = nodePrices.FlrUsdConversion;
 
-    if (network.toLowerCase() === 'ethereum' && ethUsd <= 0) {
-      return true;
-    }
-    if (network.toLowerCase() === 'flare' && flrUsd <= 0) {
-      return true;
-    }
+    if (network.toLowerCase() === 'ethereum' && ethUsd <= 0) return true;
+    if (network.toLowerCase() === 'flare' && flrUsd <= 0) return true;
+    if (network.toLowerCase() === 'binance' && ethUsd <= 0) return true; // BNB price uses ETH oracle as proxy
     return false;
   }, [network, nodePrices]);
 
@@ -75,13 +72,14 @@ const useNodeUserMintInput = (updateRegNotification) => {
   // Price Calculation Functions
   const calculateRequiredAmount = useCallback(async () => {
     try {
-        // Get current supplies
+        // Get current supplies from all chains
         const ethSupply = await nodeFunctions.getA1CurrentChainTnftSupply('ethereum');
         const flareSupply = await nodeFunctions.getA1CurrentChainTnftSupply('flare');
         const whitelistMintCount = await nodeFunctions.getWhitelistMintedCount('flare');
-        
+        const bscSupply = await nodeFunctions.getA1CurrentChainTnftSupply('bsc');
+
         // Calculate regular mint supply (excluding whitelist mints)
-        const regularSupply = ethSupply.add(flareSupply).sub(whitelistMintCount);
+        const regularSupply = ethSupply.add(flareSupply).add(bscSupply || 0).sub(whitelistMintCount);
         
         // Calculate start and end IDs for price calculation
         const startId = regularSupply.add(1);
@@ -91,8 +89,9 @@ const useNodeUserMintInput = (updateRegNotification) => {
         const priceInUSD = await nodeFunctions.getBatchPriceInUSD('flare', startId, endId);
 
         // Convert to native token price
-        const { EthUsdConversion, FlrUsdConversion } = nodePrices;
-        const tokenUsdPrice = network.toLowerCase() === 'ethereum' ? EthUsdConversion : FlrUsdConversion;
+        const { EthUsdConversion, FlrUsdConversion, BnbUsdConversion } = nodePrices;
+        const net = network.toLowerCase();
+        const tokenUsdPrice = net === 'ethereum' ? EthUsdConversion : net === 'binance' ? (BnbUsdConversion || EthUsdConversion) : FlrUsdConversion;
         
         // Calculate native price and convert to WEI
         const nativePrice = priceInUSD.toString() / tokenUsdPrice;
@@ -217,10 +216,12 @@ const useNodeUserMintInput = (updateRegNotification) => {
 
       // Check if Sufficient Funds
       if (!sufficientFunds) {
-        const decimals = network.toLowerCase() === 'ethereum' ? 6 : 2;
+        const isEth = network.toLowerCase() === 'ethereum';
+        const isBnb = network.toLowerCase() === 'binance';
+        const decimals = isEth ? 6 : isBnb ? 6 : 2;
         const requiredFormatted = formatNumber(requiredAmountWei, decimals);
         const balanceFormatted = formatNumber(nativeBalanceWei, decimals);
-        const tokenSymbol = network.toLowerCase() === 'ethereum' ? 'ETH' : 'FLR';
+        const tokenSymbol = isEth ? 'ETH' : isBnb ? 'BNB' : 'FLR';
         return {
           step: 'error',
           content: (

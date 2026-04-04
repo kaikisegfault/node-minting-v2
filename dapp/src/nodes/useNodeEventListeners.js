@@ -83,6 +83,7 @@ export const useNodeEventListeners = () => {
     ];
 
     const setupNodeListeners = (interaction, network) => {
+      if (!interaction) return;
       events.forEach(event => {
         interaction.on(event, (...args) => handleNodeEvent(network, event, ...args));
       });
@@ -93,6 +94,7 @@ export const useNodeEventListeners = () => {
 
     return () => {
       const removeNodeListeners = (interaction) => {
+        if (!interaction) return;
         events.forEach(event => {
           interaction.removeAllListeners(event);
         });

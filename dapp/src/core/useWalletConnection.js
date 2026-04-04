@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { IS_STAGING } from '../config/environment';
 
 // Network change emitter for synchronizing multiple instances
 const networkChangeEmitter = {
@@ -226,20 +227,24 @@ const useWalletConnection = () => {
 // Chain ID mappings
 const chainIdToName = (chainId) => {
   switch (chainId.toLowerCase()) {
-    case '0x1':    
+    case '0x1':
       return 'Ethereum';
+    case '0xaa36a7':
+      // Sepolia: on staging treated as Ethereum, on production shown as testnet
+      return IS_STAGING ? 'Ethereum' : 'Sepolia Testnet';
     case '0x38':
       return 'Binance';
+    case '0x61':
+      // BSC Testnet: on staging treated as Binance
+      return IS_STAGING ? 'Binance' : 'Unknown Network';
+    case '0xe':
+      return 'Flare';
+    case '0x72':
+      return IS_STAGING ? 'Flare' : 'Flare Testnet';
     case '0xa86a':
       return 'Avalanche';
     case '0x13':
       return 'Songbird';
-    case '0xe':
-      return 'Flare';
-    case '0xaa36a7':
-      return 'Sepolia Testnet';
-    case '0x72':
-      return 'Flare Testnet';
     case '0x25':
       return 'Songbird Testnet';
     case '0x7a69':
@@ -250,19 +255,19 @@ const chainIdToName = (chainId) => {
 };
 
 const networkToChainId = (network) => {
+  if (IS_STAGING) {
+    switch (network) {
+      case 'Ethereum': return '0xaa36a7';  // Sepolia
+      case 'Flare': return '0xe';          // Flare mainnet (cheap, used for staging)
+      case 'Binance': return '0x61';       // BSC Testnet
+      default: throw new Error('Unknown network');
+    }
+  }
   switch (network) {
-    case 'Ethereum':
-      return '0x1';
-    case 'Flare':
-      return '0xe';
-    case 'Binance':
-      return '0x38';
-    case 'Sepolia Testnet':
-      return '0xaa36a7';
-    case 'Hardhat Local':
-      return '0x7a69';
-    default:
-      throw new Error('Unknown network');
+    case 'Ethereum': return '0x1';
+    case 'Flare': return '0xe';
+    case 'Binance': return '0x38';
+    default: throw new Error('Unknown network');
   }
 };
 

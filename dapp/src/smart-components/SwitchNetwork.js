@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Selector from '../ui-components/Selector';
 import useWalletConnection from '../core/useWalletConnection';
 import PopupNotification from '../ui-components/PopupNotification';
+import { IS_STAGING } from '../config/environment';
 
 const createSwitchNetwork = (versionId) => {
   return () => {
@@ -27,22 +28,20 @@ const createSwitchNetwork = (versionId) => {
           await addFlareNetwork();
         }
         if (selectedNetwork === 'Binance') {
+          const bscChainId = IS_STAGING ? '0x61' : '0x38';
+          const bscConfig = IS_STAGING
+            ? { chainId: '0x61', chainName: 'BSC Testnet', nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 }, rpcUrls: ['https://bsc-testnet.bnbchain.org'], blockExplorerUrls: ['https://testnet.bscscan.com/'] }
+            : { chainId: '0x38', chainName: 'BNB Smart Chain', nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 }, rpcUrls: ['https://bsc-dataseed.binance.org/'], blockExplorerUrls: ['https://bscscan.com/'] };
           try {
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0x38' }],
+              params: [{ chainId: bscChainId }],
             });
           } catch (switchError) {
             if (switchError.code === 4902) {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0x38',
-                  chainName: 'BNB Smart Chain',
-                  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                  rpcUrls: ['https://bsc-dataseed.binance.org/'],
-                  blockExplorerUrls: ['https://bscscan.com/']
-                }],
+                params: [bscConfig],
               });
             } else {
               throw switchError;
