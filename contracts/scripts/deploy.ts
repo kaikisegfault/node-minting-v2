@@ -11,17 +11,13 @@ async function main() {
   console.log(`\nDeploying on chain ${network.chainId} with deployer: ${deployer.address}`);
   console.log(`Balance: ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))}`);
 
-  // Signer public key = address derived from SIGNER_PRIVATE_KEY
-  const signerWallet = new ethers.Wallet(process.env.SIGNER_PRIVATE_KEY!);
-  const signerPublicKey = signerWallet.address;
-  console.log(`Signer public key: ${signerPublicKey}`);
-
-  // Cross-chain operator = deployer (owner manages cross-chain ops)
-  const crossChainOperator = deployer.address;
+  // Signer and operator — MUST match ETH/Flare deployments exactly
+  const signerPublicKey = "0xE628Acef67489760B9b87185Afc01734879cf08e";
+  const crossChainOperator = "0x5c89fB9E0dd21bD7A2fe7A165e7aE676B89079Dc";
 
   // Flare is the whitelist network; ETH and BSC are not
-  const isWhitelistNetwork = network.chainId === 14n || network.chainId === 114n; // Flare mainnet or Coston2
-  const baseURI = ""; // Set later via setBaseURI()
+  const isWhitelistNetwork = network.chainId === 14n || network.chainId === 114n;
+  const baseURI = "ipfs://QmYHqyjayx2BcpvCjBbFuC1h2jY3fTkvgFJ14YPaAKZiNe/";
 
   console.log(`isWhitelistNetwork: ${isWhitelistNetwork}`);
 
