@@ -65,7 +65,7 @@ const NodePriceInfo = () => {
   const getConversionValue = () => {
     if (network === 'Ethereum') return prices.EthUsdConversion.toFixed(2);
     if (network === 'Binance') return prices.BnbUsdConversion.toFixed(2);
-    return prices.FlrUsdConversion.toFixed(5);
+    return prices.FlrUsdConversion.toFixed(4);
   };
 
   const FlashingText = ({ children }) => (
@@ -138,7 +138,7 @@ const NodePriceInfo = () => {
         <div className="price-info-section">
           {showBothPrices ? (
             <>
-              <p>FLR/USD: <FlashingText>${prices.FlrUsdConversion.toFixed(5)}</FlashingText></p>
+              <p>FLR/USD: <FlashingText>${prices.FlrUsdConversion.toFixed(4)}</FlashingText></p>
               <p>BNB/USD: <FlashingText>${prices.BnbUsdConversion.toFixed(2)}</FlashingText></p>
               <p>ETH/USD: <FlashingText>${prices.EthUsdConversion.toFixed(2)}</FlashingText></p>
             </>
