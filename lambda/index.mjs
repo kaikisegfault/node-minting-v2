@@ -410,7 +410,7 @@ export const handler = async (event) => {
                         entry.randomNonce === randomNonce
                     );
 
-                    if (updatedEntry.queuePosition === '1' && updatedEntry.status === 'inQueue') {
+                    if (updatedEntry && updatedEntry.queuePosition === '1' && updatedEntry.status === 'inQueue') {
                         await dynamodb.update({
                             TableName: TABLE_NAME,
                             Key: { address, randomNonce },
