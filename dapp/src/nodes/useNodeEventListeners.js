@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { NodeEthereumInteraction, NodeFlareInteraction } from '../core/contractInteractions';
+import { NodeEthereumInteraction, NodeFlareInteraction, NodeBSCInteraction } from '../core/contractInteractions';
 
 export const useNodeEventListeners = () => {
   const [nodeEventCounter, setNodeEventCounter] = useState(0);
 
   const handleNodeEvent = useCallback((network, eventName, ...args) => {
-    // Universal single log
     console.log(`Event ${eventName} occurred on ${network}`);
     setNodeEventCounter(prev => prev + 1);
 
@@ -13,7 +12,6 @@ export const useNodeEventListeners = () => {
       return `${address.slice(0, 4)}...${address.slice(-4)}`;
     };
 
-    // Detailed logging for specific events
     switch (eventName) {
       case 'NodesPulled':
         const [receiver, tokenIds] = args;
@@ -83,25 +81,27 @@ export const useNodeEventListeners = () => {
     ];
 
     const setupNodeListeners = (interaction, network) => {
-      if (!interaction) return;
+      if (!interaction || typeof interaction.on !== 'function') return;
       events.forEach(event => {
         interaction.on(event, (...args) => handleNodeEvent(network, event, ...args));
       });
     };
 
+    const removeNodeListeners = (interaction) => {
+      if (!interaction || typeof interaction.removeAllListeners !== 'function') return;
+      events.forEach(event => {
+        interaction.removeAllListeners(event);
+      });
+    };
+
     setupNodeListeners(NodeEthereumInteraction, 'Ethereum');
     setupNodeListeners(NodeFlareInteraction, 'Flare');
+    setupNodeListeners(NodeBSCInteraction, 'Binance');
 
     return () => {
-      const removeNodeListeners = (interaction) => {
-        if (!interaction) return;
-        events.forEach(event => {
-          interaction.removeAllListeners(event);
-        });
-      };
-
       removeNodeListeners(NodeEthereumInteraction);
       removeNodeListeners(NodeFlareInteraction);
+      removeNodeListeners(NodeBSCInteraction);
     };
   }, [handleNodeEvent]);
 
