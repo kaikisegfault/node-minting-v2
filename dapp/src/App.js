@@ -1,32 +1,11 @@
 // app.js
 import React from 'react';
-import Dapp from './Dapp';
-import ValidatorDapp from './minerals-validation/validatorDapp';
 import NodeDapp from './nodes/nodeDapp';
 import PriceFetcher from './core/dummy-fetchers/priceFetcher';
-import ReadOnlyFetcher from './core/dummy-fetchers/readOnlyFetcher';
-import UserReadOnlyFetcher from './core/dummy-fetchers/userReadOnlyFetcher';
 import NodeReadOnlyFetcher from './nodes/nodeReadOnlyFetcher';
-import NodeUserReadOnlyFetcher from './nodes/nodeUserReadOnlyFetcher';  // Add this import
+import NodeUserReadOnlyFetcher from './nodes/nodeUserReadOnlyFetcher';
 
-
-function DappFunction({ locationId }) {
-  return (
-    <div>
-      <Dapp locationId={locationId} />
-    </div>
-  );
-}
-
-function ValidatorDappFunction() {
-  return (
-    <div>
-      <ValidatorDapp />
-    </div>
-  );
-}
-
-function NodeDappFunction({ locationId }) {  
+function NodeDappFunction({ locationId }) {
   return (
     <div>
       <NodeDapp locationId={locationId} />
@@ -42,22 +21,6 @@ function PriceFetcherFunction() {
   );
 }
 
-function ReadOnlyFetcherFunction() {
-  return (
-    <div>
-      <ReadOnlyFetcher />
-    </div>
-  );
-}
-
-function UserReadOnlyFetcherFunction() {
-  return (
-    <div>
-      <UserReadOnlyFetcher />
-    </div>
-  );
-}
-
 function NodeReadOnlyFetcherFunction() {
   return (
     <div>
@@ -66,7 +29,7 @@ function NodeReadOnlyFetcherFunction() {
   );
 }
 
-function NodeUserReadOnlyFetcherFunction() {  // Add this function
+function NodeUserReadOnlyFetcherFunction() {
   return (
     <div>
       <NodeUserReadOnlyFetcher />
@@ -74,6 +37,11 @@ function NodeUserReadOnlyFetcherFunction() {  // Add this function
   );
 }
 
+export { NodeDappFunction, PriceFetcherFunction, NodeReadOnlyFetcherFunction, NodeUserReadOnlyFetcherFunction };
 
-export { DappFunction, ValidatorDappFunction, NodeDappFunction, PriceFetcherFunction, ReadOnlyFetcherFunction, UserReadOnlyFetcherFunction, NodeReadOnlyFetcherFunction, NodeUserReadOnlyFetcherFunction
-};
+// ARCHIVED: TNO and Minerals components
+// import Dapp from './Dapp';
+// import ValidatorDapp from './minerals-validation/validatorDapp';
+// import ReadOnlyFetcher from './core/dummy-fetchers/readOnlyFetcher';
+// import UserReadOnlyFetcher from './core/dummy-fetchers/userReadOnlyFetcher';
+// export { DappFunction, ValidatorDappFunction, ReadOnlyFetcherFunction, UserReadOnlyFetcherFunction };
