@@ -93,6 +93,7 @@ const NodePriceInfo = () => {
             <>
               <p> 0.000000 ETH</p>
               <p> 00.00 FLR</p>
+              <p> 0.000000 BNB</p>
             </>
           ) : (
             <p>
@@ -108,6 +109,7 @@ const NodePriceInfo = () => {
             <>
               <p>ETH/USD: $0000.00 </p>
               <p>FLR/USD: $0.00000</p>
+              <p>BNB/USD: $000.00</p>
             </>
           ) : (
             <p>{getConversionLabel()}
@@ -133,6 +135,7 @@ const NodePriceInfo = () => {
             <>
               <p><FlashingText>{getPrice('ETH').toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</FlashingText> ETH</p>
               <p><FlashingText>{getPrice('FLR').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</FlashingText> FLR</p>
+              <p><FlashingText>{getPrice('BNB').toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</FlashingText> BNB</p>
             </>
           ) : (
             <p>
@@ -148,6 +151,7 @@ const NodePriceInfo = () => {
             <>
               <p>ETH/USD: <FlashingText>${prices.EthUsdConversion.toFixed(2)}</FlashingText></p>
               <p>FLR/USD: <FlashingText>${prices.FlrUsdConversion.toFixed(5)}</FlashingText></p>
+              <p>BNB/USD: <FlashingText>${prices.BnbUsdConversion.toFixed(2)}</FlashingText></p>
             </>
           ) : (
             <p>{getConversionLabel()}
