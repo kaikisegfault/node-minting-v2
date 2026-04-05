@@ -123,35 +123,35 @@ async function fetchPrices() {
 }
 
 async function fetchBnbPrice() {
+    const response = await axios.get(
+        'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
+        {
+            params: { symbol: 'BNB', convert: 'USD' },
+            headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY }
+        }
+    );
+    return response.data.data.BNB.quote.USD.price;
+}
+
+async function fetchPricesFromCMC() {
     try {
         const response = await axios.get(
             'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
             {
-                params: { symbol: 'BNB', convert: 'USD' },
+                params: { symbol: 'FLR,ETH,BNB', convert: 'USD' },
                 headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY }
             }
         );
-        return response.data.data.BNB.quote.USD.price;
+        const { data } = response.data;
+        return {
+            flrPrice: data.FLR.quote.USD.price,
+            ethPrice: data.ETH.quote.USD.price,
+            bnbPrice: data.BNB.quote.USD.price
+        };
     } catch (error) {
-        console.error('Failed to fetch BNB price:', error.message);
-        return 600; // fallback
+        console.error('CMC fallback also failed:', error.message);
+        throw new Error('All price feeds unavailable');
     }
-}
-
-async function fetchPricesFromCMC() {
-    const response = await axios.get(
-        'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
-        {
-            params: { symbol: 'FLR,ETH,BNB', convert: 'USD' },
-            headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY }
-        }
-    );
-    const { data } = response.data;
-    return {
-        flrPrice: data.FLR.quote.USD.price,
-        ethPrice: data.ETH.quote.USD.price,
-        bnbPrice: data.BNB.quote.USD.price
-    };
 }
 
 // ---- Chain supply reads (3-chain) ----
@@ -313,10 +313,27 @@ async function handleDuplicateAddress(address, network, randomNonce) {
 export const handler = async (event) => {
     try {
         const body = JSON.parse(event.body);
-        const { address, mintAmount, network, randomNonce, status: statusUpdate } = body;
+        let { address, mintAmount, network, randomNonce, status: statusUpdate } = body;
 
         if (!address || !randomNonce || randomNonce.length !== 18) {
             return createResponse(400, { error: 'Invalid input parameters' });
+        }
+
+        // Canonicalize network name
+        if (network === 'Binance Smart Chain') network = 'Binance';
+
+        // Validate network
+        const VALID_NETWORKS = ['Ethereum', 'Flare', 'Binance'];
+        if (network && !VALID_NETWORKS.includes(network)) {
+            return createResponse(400, { error: 'Invalid network' });
+        }
+
+        // Validate mintAmount
+        if (mintAmount !== undefined) {
+            mintAmount = parseInt(mintAmount);
+            if (!Number.isInteger(mintAmount) || mintAmount < 1 || mintAmount > 100) {
+                return createResponse(400, { error: 'Invalid mint amount' });
+            }
         }
 
         let queueData = await getQueueData(network);
@@ -468,10 +485,14 @@ export const handler = async (event) => {
                     let tokenPrice;
                     if (network === 'Ethereum') {
                         tokenPrice = prices.ethPrice;
-                    } else if (network === 'Binance Smart Chain' || network === 'Binance') {
+                    } else if (network === 'Binance') {
                         tokenPrice = prices.bnbPrice;
                     } else {
                         tokenPrice = prices.flrPrice;
+                    }
+
+                    if (!tokenPrice || tokenPrice <= 0) {
+                        return createResponse(503, { error: 'Price feed unavailable. Try again shortly.' });
                     }
 
                     const nativeTokenAmount = Number(priceInUSD) / tokenPrice;
@@ -486,7 +507,7 @@ export const handler = async (event) => {
                         const actualOtherSupply = flareCurrentSupply.add(ethers.BigNumber.from(1200)).add(supplies.bscSupply);
                         const difference = actualOtherSupply.sub(ethOtherChainSupply);
                         otherChainQty = difference.gt(0) ? difference : ethers.BigNumber.from(0);
-                    } else if (network === 'Binance Smart Chain' || network === 'Binance') {
+                    } else if (network === 'Binance') {
                         const bscOtherChainSupply = supplies.bscOtherChainSupply;
                         const flareCurrentSupply = supplies.flareSupply.sub(supplies.whitelistMinted);
                         const actualOtherSupply = supplies.ethSupply.add(flareCurrentSupply).add(ethers.BigNumber.from(1200));

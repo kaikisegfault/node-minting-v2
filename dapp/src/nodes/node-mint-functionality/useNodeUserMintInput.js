@@ -25,10 +25,11 @@ const useNodeUserMintInput = (updateRegNotification) => {
   const detectPriceAnomaly = useCallback(() => {
     const ethUsd = nodePrices.EthUsdConversion;
     const flrUsd = nodePrices.FlrUsdConversion;
+    const bnbUsd = nodePrices.BnbUsdConversion;
 
     if (network.toLowerCase() === 'ethereum' && ethUsd <= 0) return true;
     if (network.toLowerCase() === 'flare' && flrUsd <= 0) return true;
-    if (network.toLowerCase() === 'binance' && ethUsd <= 0) return true; // BNB price uses ETH oracle as proxy
+    if (network.toLowerCase() === 'binance' && bnbUsd <= 0) return true;
     return false;
   }, [network, nodePrices]);
 
@@ -91,7 +92,7 @@ const useNodeUserMintInput = (updateRegNotification) => {
         // Convert to native token price
         const { EthUsdConversion, FlrUsdConversion, BnbUsdConversion } = nodePrices;
         const net = network.toLowerCase();
-        const tokenUsdPrice = net === 'ethereum' ? EthUsdConversion : net === 'binance' ? (BnbUsdConversion || EthUsdConversion) : FlrUsdConversion;
+        const tokenUsdPrice = net === 'ethereum' ? EthUsdConversion : net === 'binance' ? BnbUsdConversion : FlrUsdConversion;
         
         // Calculate native price and convert to WEI
         const nativePrice = priceInUSD.toString() / tokenUsdPrice;

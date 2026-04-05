@@ -37,7 +37,8 @@ const NodePriceInfo = () => {
     // Check if key price data is available
     const pricesLoaded = prices.currentNodePriceETH > 0 &&
                         prices.currentNodePriceFLR > 0 &&
-                        prices.EthUsdConversion > 0;
+                        prices.EthUsdConversion > 0 &&
+                        prices.BnbUsdConversion > 0;
     
     if (pricesLoaded) {
       // Add a small delay to ensure smooth UI transition
