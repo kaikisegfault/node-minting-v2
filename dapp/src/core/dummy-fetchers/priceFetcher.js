@@ -4,44 +4,16 @@ import { FlarePriceInteraction } from '../contractInteractions';
 import { setPriceState } from '../usePrices';
 import { setNodePriceState } from '../../nodes/useNodePrices';
 
-const FEED_INDEXES = [0, 9]; // Indices for FLR/USD and ETH/USD
-
-const fetchBnbPrice = async () => {
-  try {
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd');
-    const data = await res.json();
-    return data.binancecoin?.usd || 0;
-  } catch (err) {
-    console.error('BNB price fetch failed:', err);
-    return 0;
-  }
-};
+const FEED_INDEXES = [0, 9, 13]; // Indices for FLR/USD, ETH/USD, BNB/USD
 
 const PriceFetcher = () => {
   const fetchPrices = useCallback(async () => {
     try {
-      const [feedResult, bnbPrice] = await Promise.all([
-        FlarePriceInteraction.fetchCurrentFeeds(FEED_INDEXES),
-        fetchBnbPrice()
-      ]);
+      const [feeds, decimals] = await FlarePriceInteraction.fetchCurrentFeeds(FEED_INDEXES);
 
-      const [feeds, decimals] = feedResult;
-
-      const flrIndex = decimals.findIndex(dec => dec === 7);
-      const ethIndex = decimals.findIndex(dec => dec === 3);
-
-      if (flrIndex === -1 || ethIndex === -1) {
-        console.error("Price feed indices not found.");
-        return;
-      }
-
-      const flrFeed = feeds[flrIndex];
-      const ethFeed = feeds[ethIndex];
-      const flrDecimals = decimals[flrIndex];
-      const ethDecimals = decimals[ethIndex];
-
-      const flrPrice = Number(ethers.utils.formatUnits(flrFeed, flrDecimals));
-      const ethPrice = Number(ethers.utils.formatUnits(ethFeed, ethDecimals));
+      const flrPrice = Number(ethers.utils.formatUnits(feeds[0], decimals[0]));
+      const ethPrice = Number(ethers.utils.formatUnits(feeds[1], decimals[1]));
+      const bnbPrice = Number(ethers.utils.formatUnits(feeds[2], decimals[2]));
 
       const rawPrices = {
         ethUsd: ethPrice,

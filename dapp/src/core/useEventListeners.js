@@ -42,6 +42,7 @@ export const useEventListeners = () => {
     ];
 
     const setupListeners = (interaction, network) => {
+      if (!interaction || typeof interaction.on !== 'function') return;
       events.forEach(event => {
         interaction.on(event, (...args) => handleEvent(network, event, ...args));
       });
@@ -52,6 +53,7 @@ export const useEventListeners = () => {
 
     return () => {
       const removeListeners = (interaction) => {
+        if (!interaction || typeof interaction.removeAllListeners !== 'function') return;
         events.forEach(event => {
           interaction.removeAllListeners(event);
         });

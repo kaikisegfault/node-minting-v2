@@ -111,26 +111,16 @@ async function fetchPrices() {
             provider
         );
 
-        const [feeds, decimals] = await contract.getFeedsByIndex([0, 9]);
+        // FLR=index 0, ETH=index 9, BNB=index 13 (all from Flare FTSO)
+        const [feeds, decimals] = await contract.getFeedsByIndex([0, 9, 13]);
         return {
             flrPrice: Number(ethers.utils.formatUnits(feeds[0], decimals[0])),
             ethPrice: Number(ethers.utils.formatUnits(feeds[1], decimals[1])),
-            bnbPrice: await fetchBnbPrice()
+            bnbPrice: Number(ethers.utils.formatUnits(feeds[2], decimals[2]))
         };
     } catch (error) {
         return fetchPricesFromCMC();
     }
-}
-
-async function fetchBnbPrice() {
-    const response = await axios.get(
-        'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
-        {
-            params: { symbol: 'BNB', convert: 'USD' },
-            headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY }
-        }
-    );
-    return response.data.data.BNB.quote.USD.price;
 }
 
 async function fetchPricesFromCMC() {
