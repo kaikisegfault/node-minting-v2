@@ -151,12 +151,24 @@ const useWalletConnection = () => {
           params: [{ chainId: targetChainId }],
         });
       } catch (switchError) {
-        if (switchError.code === 4902 && newNetwork === 'Flare') {
-          await addFlareNetwork();
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: targetChainId }],
-          });
+        if (switchError.code === 4902) {
+          // Auto-add missing networks
+          const networkConfigs = {
+            'Flare': { chainId: '0xe', chainName: 'Flare Mainnet', nativeCurrency: { name: 'Flare', symbol: 'FLR', decimals: 18 }, rpcUrls: ['https://flare-api.flare.network/ext/bc/C/rpc'], blockExplorerUrls: ['https://flare-explorer.flare.network'] },
+            'Binance': IS_STAGING
+              ? { chainId: '0x61', chainName: 'BSC Testnet', nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 }, rpcUrls: ['https://bsc-testnet.bnbchain.org'], blockExplorerUrls: ['https://testnet.bscscan.com/'] }
+              : { chainId: '0x38', chainName: 'BNB Smart Chain', nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 }, rpcUrls: ['https://bsc-dataseed.binance.org/'], blockExplorerUrls: ['https://bscscan.com/'] },
+            'Ethereum': IS_STAGING
+              ? { chainId: '0xaa36a7', chainName: 'Sepolia', nativeCurrency: { name: 'SepoliaETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'], blockExplorerUrls: ['https://sepolia.etherscan.io/'] }
+              : null
+          };
+          const config = networkConfigs[newNetwork];
+          if (config) {
+            await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [config] });
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: targetChainId }] });
+          } else {
+            throw switchError;
+          }
         } else {
           throw switchError;
         }

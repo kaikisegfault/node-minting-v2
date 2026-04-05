@@ -3,13 +3,15 @@ import PopupNotification from '../ui-components/PopupNotification';
 import Grid from '../ui-components/Grid';
 import useWalletConnection from '../core/useWalletConnection';
 import { useNodeUserReadOnlyState } from './useNodeUserReadOnlyState';
+import { CONFIG, IS_STAGING } from '../config/environment';
 
 const NodeMyAddressInfo = () => {
     const [showPopup, setShowPopup] = useState(false);
     const { activeAddress } = useWalletConnection();
     const {
         EthA6AddressEscrowHoldingsResults,
-        FlareA6AddressEscrowHoldingsResults
+        FlareA6AddressEscrowHoldingsResults,
+        BscA6AddressEscrowHoldingsResults
     } = useNodeUserReadOnlyState();
 
     const handleButtonClick = () => {
@@ -24,23 +26,27 @@ const NodeMyAddressInfo = () => {
 
     const ethQuantity = EthA6AddressEscrowHoldingsResults?.total || 0;
     const flareQuantity = FlareA6AddressEscrowHoldingsResults?.total || 0;
-    const totalQuantity = ethQuantity + flareQuantity;
+    const bscQuantity = BscA6AddressEscrowHoldingsResults?.total || 0;
+    const totalQuantity = ethQuantity + flareQuantity + bscQuantity;
 
-    const useTestData = false;
-    const testEthIds = useTestData ? Array.from({length: 50}, (_, i) => i + 1) : [];
-    const testFlareIds = useTestData ? Array.from({length: 50}, (_, i) => i + 51) : [];
-
-    const ethNodeIds = useTestData ? testEthIds : (EthA6AddressEscrowHoldingsResults?.ids || []);
-    const flareNodeIds = useTestData ? testFlareIds : (FlareA6AddressEscrowHoldingsResults?.ids || []);
+    const ethNodeIds = EthA6AddressEscrowHoldingsResults?.ids || [];
+    const flareNodeIds = FlareA6AddressEscrowHoldingsResults?.ids || [];
+    const bscNodeIds = BscA6AddressEscrowHoldingsResults?.ids || [];
 
     const getExplorerUrl = (networkId, tokenId) => {
-        const ethContractAddress = process.env.REACT_APP_NODE_CONTRACT_ADDRESS;
-        const flareContractAddress = process.env.REACT_APP_NODE_CONTRACT_ADDRESS;
-    
+        const contractAddress = CONFIG.contracts.node;
+        const bscContractAddress = CONFIG.contracts.nodeBsc || CONFIG.contracts.node;
+
         if (networkId === 'eth') {
-            return `https://etherscan.io/nft/${ethContractAddress}/${tokenId}`;
+            return IS_STAGING
+                ? `https://sepolia.etherscan.io/nft/${contractAddress}/${tokenId}`
+                : `https://etherscan.io/nft/${contractAddress}/${tokenId}`;
         } else if (networkId === 'flare') {
-            return `https://flare-explorer.flare.network/token/${flareContractAddress}/instance/${tokenId}`;
+            return `https://flare-explorer.flare.network/token/${contractAddress}/instance/${tokenId}`;
+        } else if (networkId === 'bsc') {
+            return IS_STAGING
+                ? `https://testnet.bscscan.com/nft/${bscContractAddress}/${tokenId}`
+                : `https://bscscan.com/nft/${bscContractAddress}/${tokenId}`;
         }
         return '#';
     };
@@ -55,7 +61,12 @@ const NodeMyAddressInfo = () => {
         ));
     }
     if (flareQuantity > 0) {
-        gridRows.push(["Flare", flareQuantity].map(item => 
+        gridRows.push(["Flare", flareQuantity].map(item =>
+            <span className="grid-row-normal">{item}</span>
+        ));
+    }
+    if (bscQuantity > 0) {
+        gridRows.push(["Binance", bscQuantity].map(item =>
             <span className="grid-row-normal">{item}</span>
         ));
     }
@@ -141,6 +152,7 @@ const NodeMyAddressInfo = () => {
 
             {ethNodeIds.length > 0 && <NodeIdsBox title="EXPL Node IDs (Ethereum)" ids={ethNodeIds} networkId="eth" />}
             {flareNodeIds.length > 0 && <NodeIdsBox title="EXPL Node IDs (Flare Network)" ids={flareNodeIds} networkId="flare" />}
+            {bscNodeIds.length > 0 && <NodeIdsBox title="EXPL Node IDs (Binance)" ids={bscNodeIds} networkId="bsc" />}
 
             <div className='addr-t' style={{ marginTop: '20px', textAlign: 'center' }}>
                 <span className='addr'>Address:</span> {formatAddress(activeAddress)}

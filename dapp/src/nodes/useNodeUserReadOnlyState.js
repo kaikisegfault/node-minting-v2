@@ -15,7 +15,8 @@ const defaultEscrowState = {
 
 let nodeUserReadOnlyState = {
   EthA6AddressEscrowHoldingsResults: { ...defaultEscrowState },
-  FlareA6AddressEscrowHoldingsResults: { ...defaultEscrowState }
+  FlareA6AddressEscrowHoldingsResults: { ...defaultEscrowState },
+  BscA6AddressEscrowHoldingsResults: { ...defaultEscrowState }
 };
 
 let listeners = [];
@@ -37,8 +38,10 @@ export const setNodeUserReadOnlyState = (newData) => {
     ...nodeUserReadOnlyState,
     ...(newData.EthA6AddressEscrowHoldingsResults ? 
       { EthA6AddressEscrowHoldingsResults: processEscrowHoldings(newData.EthA6AddressEscrowHoldingsResults) } : {}),
-    ...(newData.FlareA6AddressEscrowHoldingsResults ? 
-      { FlareA6AddressEscrowHoldingsResults: processEscrowHoldings(newData.FlareA6AddressEscrowHoldingsResults) } : {})
+    ...(newData.FlareA6AddressEscrowHoldingsResults ?
+      { FlareA6AddressEscrowHoldingsResults: processEscrowHoldings(newData.FlareA6AddressEscrowHoldingsResults) } : {}),
+    ...(newData.BscA6AddressEscrowHoldingsResults ?
+      { BscA6AddressEscrowHoldingsResults: processEscrowHoldings(newData.BscA6AddressEscrowHoldingsResults) } : {})
   };
 
   listeners.forEach(listener => listener(nodeUserReadOnlyState));

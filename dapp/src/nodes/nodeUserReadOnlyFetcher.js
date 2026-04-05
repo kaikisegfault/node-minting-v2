@@ -8,19 +8,22 @@ const NodeUserReadOnlyFetcher = () => {
   const { connected, activeAddress } = useWalletConnection();
   const ethTimerRef = useRef(null);
   const flareTimerRef = useRef(null);
+  const bscTimerRef = useRef(null);
 
   const fetchAllData = useCallback(async () => {
     if (!connected || !activeAddress) return;
 
     try {
-      const [ethHoldings, flareHoldings] = await Promise.all([
+      const [ethHoldings, flareHoldings, bscHoldings] = await Promise.all([
         getA6AddressEscrowHoldings('ethereum', activeAddress),
-        getA6AddressEscrowHoldings('flare', activeAddress)
+        getA6AddressEscrowHoldings('flare', activeAddress),
+        getA6AddressEscrowHoldings('bsc', activeAddress)
       ]);
 
       setNodeUserReadOnlyState({
         EthA6AddressEscrowHoldingsResults: ethHoldings,
-        FlareA6AddressEscrowHoldingsResults: flareHoldings
+        FlareA6AddressEscrowHoldingsResults: flareHoldings,
+        BscA6AddressEscrowHoldingsResults: bscHoldings
       });
     } catch (error) {
       console.error('try again later:', error);
@@ -29,58 +32,63 @@ const NodeUserReadOnlyFetcher = () => {
 
   const fetchEthHoldings = useCallback(async () => {
     if (!connected || !activeAddress) return;
-
     try {
       const ethHoldings = await getA6AddressEscrowHoldings('ethereum', activeAddress);
       setNodeUserReadOnlyState({ EthA6AddressEscrowHoldingsResults: ethHoldings });
-      console.log('getA6AddressEscrowHoldings ETH HeartBeat');
     } catch (error) {
-      console.error('not Pong:', error);
+      console.error('ETH holdings fetch error:', error);
     }
   }, [connected, activeAddress, getA6AddressEscrowHoldings]);
 
   const fetchFlareHoldings = useCallback(async () => {
     if (!connected || !activeAddress) return;
-
     try {
       const flareHoldings = await getA6AddressEscrowHoldings('flare', activeAddress);
       setNodeUserReadOnlyState({ FlareA6AddressEscrowHoldingsResults: flareHoldings });
-      console.log('getA6AddressEscrowHoldings FLR HeartBeat');
     } catch (error) {
-      console.error('not Pong:', error);
+      console.error('Flare holdings fetch error:', error);
+    }
+  }, [connected, activeAddress, getA6AddressEscrowHoldings]);
+
+  const fetchBscHoldings = useCallback(async () => {
+    if (!connected || !activeAddress) return;
+    try {
+      const bscHoldings = await getA6AddressEscrowHoldings('bsc', activeAddress);
+      setNodeUserReadOnlyState({ BscA6AddressEscrowHoldingsResults: bscHoldings });
+    } catch (error) {
+      console.error('BSC holdings fetch error:', error);
     }
   }, [connected, activeAddress, getA6AddressEscrowHoldings]);
 
   const startEthDataCycle = useCallback(() => {
-    const runEthDataFetch = async () => {
-      await fetchEthHoldings();
-      ethTimerRef.current = setTimeout(runEthDataFetch, 8674);
-    };
-
-    runEthDataFetch();
+    const run = async () => { await fetchEthHoldings(); ethTimerRef.current = setTimeout(run, 8674); };
+    run();
   }, [fetchEthHoldings]);
 
   const startFlareDataCycle = useCallback(() => {
-    const runFlareDataFetch = async () => {
-      await fetchFlareHoldings();
-      flareTimerRef.current = setTimeout(runFlareDataFetch, 8674);
-    };
-
-    runFlareDataFetch();
+    const run = async () => { await fetchFlareHoldings(); flareTimerRef.current = setTimeout(run, 8674); };
+    run();
   }, [fetchFlareHoldings]);
 
+  const startBscDataCycle = useCallback(() => {
+    const run = async () => { await fetchBscHoldings(); bscTimerRef.current = setTimeout(run, 8674); };
+    run();
+  }, [fetchBscHoldings]);
+
   useEffect(() => {
-    fetchAllData(); // Initial fetch of all data when component mounts or connection/address changes
+    fetchAllData();
     if (connected && activeAddress) {
       startEthDataCycle();
       startFlareDataCycle();
+      startBscDataCycle();
     }
 
     return () => {
       if (ethTimerRef.current) clearTimeout(ethTimerRef.current);
       if (flareTimerRef.current) clearTimeout(flareTimerRef.current);
+      if (bscTimerRef.current) clearTimeout(bscTimerRef.current);
     };
-  }, [fetchAllData, startEthDataCycle, startFlareDataCycle, connected, activeAddress]);
+  }, [fetchAllData, startEthDataCycle, startFlareDataCycle, startBscDataCycle, connected, activeAddress]);
 
   return null;
 };
