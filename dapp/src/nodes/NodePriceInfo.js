@@ -12,40 +12,28 @@ const NodePriceInfo = () => {
   const isEthereumOrFlare = network === 'Ethereum' || network === 'Flare' || network === 'Binance';
   const showBothPrices = !connected || !isEthereumOrFlare;
 
-  // Handle flashing effect on price updates
   useEffect(() => {
     setFlash(true);
     const timer = setTimeout(() => setFlash(false), 1000);
     return () => clearTimeout(timer);
   }, [prices.lastUpdateTimestamp]);
-  
+
   useEffect(() => {
-    // One simple check that ensures complete data
     if (prices.nextTierPriceUSD >= 7) {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 250);
-      
+      const timer = setTimeout(() => { setIsLoading(false); }, 250);
       return () => clearTimeout(timer);
     } else {
       setIsLoading(true);
     }
   }, [prices.nextTierPriceUSD]);
-  
-  // Add a loading delay to ensure consistent UI rendering
+
   useEffect(() => {
-    // Check if key price data is available
     const pricesLoaded = prices.currentNodePriceETH > 0 &&
                         prices.currentNodePriceFLR > 0 &&
                         prices.EthUsdConversion > 0 &&
                         prices.BnbUsdConversion > 0;
-    
     if (pricesLoaded) {
-      // Add a small delay to ensure smooth UI transition
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 250);
-      
+      const timer = setTimeout(() => { setIsLoading(false); }, 250);
       return () => clearTimeout(timer);
     }
   }, [prices]);
@@ -63,7 +51,8 @@ const NodePriceInfo = () => {
   };
 
   const getTokenDecimals = () => {
-    if (network === 'Ethereum' || network === 'Binance') return 6;
+    if (network === 'Ethereum') return 6;
+    if (network === 'Binance') return 5;
     return 2;
   };
 
@@ -91,9 +80,9 @@ const NodePriceInfo = () => {
         <h3>Price <Spinner animation="grow" variant="secondary" size="sm" /> </h3>
           {showBothPrices ? (
             <>
-              <p> 0.000000 ETH</p>
-              <p> 0.000000 BNB</p>
               <p> 00.00 FLR</p>
+              <p> 0.00000 BNB</p>
+              <p> 0.000000 ETH</p>
             </>
           ) : (
             <p>
@@ -107,9 +96,9 @@ const NodePriceInfo = () => {
         <div className="price-info-section">
           {showBothPrices ? (
             <>
-              <p>ETH/USD: $0000.00 </p>
-              <p>BNB/USD: $000.00</p>
               <p>FLR/USD: $0.00000</p>
+              <p>BNB/USD: $000.00</p>
+              <p>ETH/USD: $0000.00 </p>
             </>
           ) : (
             <p>{getConversionLabel()}
@@ -125,7 +114,7 @@ const NodePriceInfo = () => {
     </div>
     );
   }
-  
+
   return (
     <div className="price-info-box">
       <div className="price-info-section">
@@ -133,9 +122,9 @@ const NodePriceInfo = () => {
           <h3>Price</h3>
           {showBothPrices ? (
             <>
-              <p><FlashingText>{getPrice('ETH').toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</FlashingText> ETH</p>
-              <p><FlashingText>{getPrice('BNB').toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</FlashingText> BNB</p>
               <p><FlashingText>{getPrice('FLR').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</FlashingText> FLR</p>
+              <p><FlashingText>{getPrice('BNB').toLocaleString(undefined, { minimumFractionDigits: 5, maximumFractionDigits: 5 })}</FlashingText> BNB</p>
+              <p><FlashingText>{getPrice('ETH').toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</FlashingText> ETH</p>
             </>
           ) : (
             <p>
@@ -149,9 +138,9 @@ const NodePriceInfo = () => {
         <div className="price-info-section">
           {showBothPrices ? (
             <>
-              <p>ETH/USD: <FlashingText>${prices.EthUsdConversion.toFixed(2)}</FlashingText></p>
-              <p>BNB/USD: <FlashingText>${prices.BnbUsdConversion.toFixed(2)}</FlashingText></p>
               <p>FLR/USD: <FlashingText>${prices.FlrUsdConversion.toFixed(5)}</FlashingText></p>
+              <p>BNB/USD: <FlashingText>${prices.BnbUsdConversion.toFixed(2)}</FlashingText></p>
+              <p>ETH/USD: <FlashingText>${prices.EthUsdConversion.toFixed(2)}</FlashingText></p>
             </>
           ) : (
             <p>{getConversionLabel()}
