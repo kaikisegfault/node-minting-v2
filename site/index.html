@@ -893,6 +893,37 @@
                 <div class="new-popup-message"></div>
             </div>
         </div>
+        <!-- Kill Switch: checks pause.json, hides DApp if paused -->
+        <div id="maintenance-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+            background:linear-gradient(135deg,#0a0a1a 0%,#1a1a2e 50%,#16213e 100%);z-index:99999;
+            display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;">
+            <div style="max-width:500px;padding:40px;">
+                <div style="font-size:48px;margin-bottom:20px;opacity:0.6;">&#9881;</div>
+                <h1 style="color:#fff;font-family:'Space Grotesk',sans-serif;font-size:28px;margin-bottom:16px;letter-spacing:1px;">
+                    Under Construction
+                </h1>
+                <p style="color:#9a9ab0;font-size:16px;line-height:1.6;margin-bottom:30px;">
+                    We're making improvements. Check latest
+                    <a href="https://discord.com/invite/RetTCVq7tJ" target="_blank" rel="noopener noreferrer"
+                       style="color:#9370DB;text-decoration:underline;font-weight:600;">Announcements</a>
+                    for updates.
+                </p>
+                <div style="width:60px;height:2px;background:#9370DB;margin:0 auto;border-radius:1px;"></div>
+            </div>
+        </div>
+        <script>
+        (function(){
+            var overlay=document.getElementById('maintenance-overlay');
+            overlay.style.display='none';
+            fetch('pause.json?t='+Date.now()).then(function(r){return r.json()}).then(function(d){
+                if(d&&d.paused===true){
+                    overlay.style.display='flex';
+                    var fp=document.getElementById('fullpage');if(fp)fp.style.display='none';
+                }
+            }).catch(function(){});
+        })();
+        </script>
+
         <script src="js/jquery-1.12.4.min.js" crossorigin="anonymous"></script>
         <script src="js/bootstrap.bundle.min.js"></script>
         <script src="js/owl.carousel.min.js"></script>
@@ -903,7 +934,7 @@
         <script src="js/jquery.validate.min.js"></script>
         <script src="js/script.js"></script>
         <script src="./js/bootstrap.min.js"></script>
-        <script src="build/static/js/main.b19c0ea5.js"></script>
+        <script src="build/static/js/main.e5714248.js"></script>
 
         <!-- ONE Ecosystem Footer -->
         <footer class="oeu-footer">
