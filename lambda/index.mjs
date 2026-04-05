@@ -184,12 +184,12 @@ async function getChainSupplies() {
 }
 
 // ---- Queue operations ----
-async function getQueueData(network) {
+async function getQueueData() {
     const { Items = [] } = await dynamodb.scan({
         TableName: TABLE_NAME,
         ConsistentRead: true
     });
-    return Items.filter(item => item.network === network);
+    return Items;
 }
 
 async function generateMintSignature(value, otherChainQty, mintAmount, randomNonce, signatureTimestamp) {
@@ -275,7 +275,7 @@ async function handleExpiredEntries(queueData) {
 }
 
 async function handleDuplicateAddress(address, network, randomNonce) {
-    const queueData = await getQueueData(network);
+    const queueData = await getQueueData();
     const duplicateEntry = queueData.find(entry =>
         !entry.concluded &&
         entry.address.toLowerCase() === address.toLowerCase() &&
@@ -292,7 +292,7 @@ async function handleDuplicateAddress(address, network, randomNonce) {
             ConditionExpression: 'attribute_exists(address) AND attribute_exists(randomNonce)'
         });
 
-        const updatedQueueData = await getQueueData(network);
+        const updatedQueueData = await getQueueData();
         await updateQueuePositions(updatedQueueData, network);
         return true;
     }
@@ -326,12 +326,12 @@ export const handler = async (event) => {
             }
         }
 
-        let queueData = await getQueueData(network);
+        let queueData = await getQueueData();
 
         // Handle expired entries
         const hasExpiredEntries = await handleExpiredEntries(queueData);
         if (hasExpiredEntries) {
-            queueData = await getQueueData(network);
+            queueData = await getQueueData();
         }
 
         if (statusUpdate) {
@@ -363,7 +363,7 @@ export const handler = async (event) => {
                     });
                 }
                 if (isTerminalStatus) {
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
                     await updateQueuePositions(queueData, network);
                 }
 
@@ -381,12 +381,12 @@ export const handler = async (event) => {
             try {
                 console.log('Starting mint request handling:', { address, network, randomNonce, mintAmount });
 
-                queueData = await getQueueData(network);
+                queueData = await getQueueData();
                 const hasExpiredEntries = await handleExpiredEntries(queueData);
                 if (hasExpiredEntries) {
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
                     await updateQueuePositions(queueData, network);
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
                 }
 
                 const anyExistingEntry = queueData.find(entry =>
@@ -397,12 +397,12 @@ export const handler = async (event) => {
                 if (anyExistingEntry) {
                     if (anyExistingEntry.concluded) {
                         await updateQueuePositions(queueData, network);
-                        queueData = await getQueueData(network);
+                        queueData = await getQueueData();
                         return createResponse(200, { queueData });
                     }
 
                     await updateQueuePositions(queueData, network);
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
 
                     const updatedEntry = queueData.find(entry =>
                         !entry.concluded &&
@@ -418,11 +418,11 @@ export const handler = async (event) => {
                             ExpressionAttributeNames: { '#status': 'status' },
                             ExpressionAttributeValues: { ':status': 'waiting-user-confirmation' }
                         });
-                        queueData = await getQueueData(network);
+                        queueData = await getQueueData();
                     }
                 } else {
                     await handleDuplicateAddress(address, network, randomNonce);
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
 
                     const activeEntries = queueData.filter(entry => !entry.concluded);
                     const newEntry = {
@@ -444,9 +444,9 @@ export const handler = async (event) => {
                         ExpressionAttributeValues: { ':true': true }
                     });
 
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
                     await updateQueuePositions(queueData, network);
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
                 }
 
                 // Signature generation
@@ -543,7 +543,7 @@ export const handler = async (event) => {
 
             } catch (error) {
                 if (error.name === 'ConditionalCheckFailedException') {
-                    queueData = await getQueueData(network);
+                    queueData = await getQueueData();
                     return createResponse(200, { queueData });
                 }
                 console.error('Error in mint request handling:', {
