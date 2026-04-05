@@ -1,7 +1,7 @@
 // src/ui-components/Selector.js
 import React from 'react';
 
-const Selector = ({ title, options, onChange, selectedOption, disabledOptions = [], defaultSelected = '', name }) => {
+const Selector = ({ title, options, labels, onChange, selectedOption, disabledOptions = [], defaultSelected = '', name }) => {
   return (
     <div className="react-selector">
       {title && <h3 className="react-selector-header">{title}</h3>}
@@ -16,7 +16,7 @@ const Selector = ({ title, options, onChange, selectedOption, disabledOptions = 
               onChange={() => onChange(option)}
               disabled={disabledOptions.includes(option)}
             />
-            {option}
+            {labels ? labels[index] : option}
           </label>
         ))}
       </div>

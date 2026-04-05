@@ -52,6 +52,7 @@ const createSwitchNetwork = (versionId) => {
         <Selector
           title={getTitle()}
           options={['Flare', 'Binance', 'Ethereum']}
+          labels={['Flare', 'BSC', 'Ethereum']}
           onChange={handleNetworkChange}
           selectedOption={network}
           disabledOptions={['none']}
