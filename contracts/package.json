@@ -14,10 +14,10 @@
     "deploy:bsc": "hardhat run scripts/deploy.ts --network bsc"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
     "@openzeppelin/contracts": "^5.0.2",
     "@types/node": "^20.0.0",
-    "hardhat": "^2.22.0",
+    "hardhat": "^3.6.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.4.0"
   }
